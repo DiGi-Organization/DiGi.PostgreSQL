@@ -43,11 +43,15 @@ public enum FilterOperator
 
 Checks if the column value is equal to the filter value\. Applicable to both text and numeric columns\.
 
+Takes a scalar value; a `null` value matches `IS NULL`.
+
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.NotEquals'></a>
 
 `NotEquals` 1
 
 Checks if the column value is not equal to the filter value\. Applicable to both text and numeric columns\.
+
+Takes a scalar value; a `null` value matches `IS NOT NULL`.
 
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.GreaterThan'></a>
 
@@ -55,11 +59,15 @@ Checks if the column value is not equal to the filter value\. Applicable to both
 
 Checks if the column value is greater than the filter value\. Applicable to numeric columns only\.
 
+Takes a scalar value.
+
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.GreaterThanOrEqual'></a>
 
 `GreaterThanOrEqual` 3
 
 Checks if the column value is greater than or equal to the filter value\. Applicable to numeric columns only\.
+
+Takes a scalar value.
 
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.LessThan'></a>
 
@@ -67,11 +75,15 @@ Checks if the column value is greater than or equal to the filter value\. Applic
 
 Checks if the column value is less than the filter value\. Applicable to numeric columns only\.
 
+Takes a scalar value.
+
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.LessThanOrEqual'></a>
 
 `LessThanOrEqual` 5
 
 Checks if the column value is less than or equal to the filter value\. Applicable to numeric columns only\.
+
+Takes a scalar value.
 
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.In'></a>
 
@@ -79,11 +91,15 @@ Checks if the column value is less than or equal to the filter value\. Applicabl
 
 Checks if the column value matches any of the values in the specified collection parameter\. Applicable to both text and numeric columns\.
 
+Takes a JSON array of values, or a single scalar treated as a one-element list; `null` items are skipped and an empty list matches nothing.
+
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.NotIn'></a>
 
 `NotIn` 7
 
 Checks if the column value does not match any of the values in the specified collection parameter\. Applicable to both text and numeric columns\.
+
+Takes a JSON array of values, or a single scalar treated as a one-element list; `null` items are skipped and an empty list matches everything.
 
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.Contains'></a>
 
@@ -91,17 +107,23 @@ Checks if the column value does not match any of the values in the specified col
 
 Checks if the column value contains the filter string value as a substring \(case\-insensitive search\)\. Applicable to text and string columns only\.
 
+Takes a string, matched as a case-insensitive substring (`ILIKE`, wrapped in `%` server-side).
+
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.IsNull'></a>
 
 `IsNull` 9
 
 Checks if the column value is null\. Applicable to all column types\.
 
+The filter value is ignored.
+
 <a name='DiGi.PostgreSQL.Table.Enums.FilterOperator.IsNotNull'></a>
 
 `IsNotNull` 10
 
 Checks if the column value is not null\. Applicable to all column types\.
+
+The filter value is ignored.
 
 <a name='DiGi.PostgreSQL.Table.Enums.HistogramBucketing'></a>
 

@@ -294,6 +294,8 @@ Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system
 
 Gets or sets the unique identifier of the column to filter\.
 
+Must name a column present on the stored table (obtainable from the building-data `columnuniqueids` endpoint); a column the table does not hold throws [InvalidFilterException](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.InvalidFilterException 'DiGi\.PostgreSQL\.Table\.Classes\.InvalidFilterException').
+
 ```csharp
 public string? ColumnUniqueId { get; set; }
 ```
@@ -318,7 +320,11 @@ public DiGi.PostgreSQL.Table.Enums.FilterOperator FilterOperator { get; set; }
 
 ## FilterCondition\.Value Property
 
-Gets or sets the value to compare against\. For list operators like In or NotIn, this should be a collection of values\.
+Gets or sets the value to compare against; the accepted JSON shape depends on [FilterOperator](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterCondition.FilterOperator 'DiGi\.PostgreSQL\.Table\.Classes\.FilterCondition\.FilterOperator')\.
+
+Comparison operators ([Equals](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.Equals 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.Equals'), [NotEquals](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.NotEquals 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.NotEquals'), [GreaterThan](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.GreaterThan 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.GreaterThan'), [GreaterThanOrEqual](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.GreaterThanOrEqual 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.GreaterThanOrEqual'), [LessThan](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.LessThan 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.LessThan'), [LessThanOrEqual](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.LessThanOrEqual 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.LessThanOrEqual')) take a scalar convertible to the column's type. [In](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.In 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.In') and [NotIn](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.NotIn 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.NotIn') take a JSON array of values, or a single scalar treated as a one-element list. [Contains](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.Contains 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.Contains') takes a string matched as a case-insensitive substring (`ILIKE`, wrapped in `%` server-side). [IsNull](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.IsNull 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.IsNull') and [IsNotNull](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.IsNotNull 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.IsNotNull') ignore this value.
+
+A value that cannot be converted to the column's type throws [InvalidFilterException](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.InvalidFilterException 'DiGi\.PostgreSQL\.Table\.Classes\.InvalidFilterException'). A `null` value and an empty [In](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.In 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.In')/[NotIn](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.NotIn 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.NotIn') list are handled without an error: [Equals](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.Equals 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.Equals') becomes `IS NULL`, [NotEquals](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.NotEquals 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.NotEquals') becomes `IS NOT NULL`, [NotIn](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator.NotIn 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator\.NotIn') becomes `1=1` (matches everything), and every other operator degrades to `1=0` (no match).
 
 ```csharp
 public object? Value { get; set; }
