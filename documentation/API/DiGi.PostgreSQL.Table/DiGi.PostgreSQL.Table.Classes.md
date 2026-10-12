@@ -379,6 +379,107 @@ public DiGi.PostgreSQL.Table.Enums.FilterLogicalOperator LogicalOperator { get; 
 #### Property Value
 [FilterLogicalOperator](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterLogicalOperator 'DiGi\.PostgreSQL\.Table\.Enums\.FilterLogicalOperator')
 
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException'></a>
+
+## InvalidFilterException Class
+
+Thrown when a filtered read names a column the stored table does not hold, or supplies a filter value that
+cannot be converted to the column's type\. A request\-level failure a caller can catch and report, distinct
+from a `null` result \(no connection, or a valid filter that matched nothing\)\.
+
+```csharp
+public class InvalidFilterException : System.Exception
+```
+
+Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → [System\.Exception](https://learn.microsoft.com/en-us/dotnet/api/system.exception 'System\.Exception') → InvalidFilterException
+### Constructors
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.InvalidFilterException(string)'></a>
+
+## InvalidFilterException\(string\) Constructor
+
+Initializes a new instance for a target column that is not on the stored column list\.
+
+```csharp
+public InvalidFilterException(string columnUniqueId);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.InvalidFilterException(string).columnUniqueId'></a>
+
+`columnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The unique identifier of the column that the stored table does not hold\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.InvalidFilterException(string,DiGi.PostgreSQL.Table.Enums.FilterOperator,object)'></a>
+
+## InvalidFilterException\(string, FilterOperator, object\) Constructor
+
+Initializes a new instance for a filter condition that names an unknown column or carries an unconvertible value\.
+
+```csharp
+public InvalidFilterException(string columnUniqueId, DiGi.PostgreSQL.Table.Enums.FilterOperator filterOperator, object? value=null);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.InvalidFilterException(string,DiGi.PostgreSQL.Table.Enums.FilterOperator,object).columnUniqueId'></a>
+
+`columnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The unique identifier of the offending filter column\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.InvalidFilterException(string,DiGi.PostgreSQL.Table.Enums.FilterOperator,object).filterOperator'></a>
+
+`filterOperator` [FilterOperator](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator')
+
+The filter operator of the offending condition\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.InvalidFilterException(string,DiGi.PostgreSQL.Table.Enums.FilterOperator,object).value'></a>
+
+`value` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
+
+The value that could not be converted to the column's type, when there is one; otherwise `null`\.
+### Properties
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.ColumnUniqueId'></a>
+
+## InvalidFilterException\.ColumnUniqueId Property
+
+Gets the unique identifier of the offending column — the target column, or a filter condition's column\.
+
+```csharp
+public string ColumnUniqueId { get; }
+```
+
+#### Property Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.FilterOperator'></a>
+
+## InvalidFilterException\.FilterOperator Property
+
+Gets the filter operator when the failure is a filter condition; otherwise `null` \(unknown target column\)\.
+
+```csharp
+public System.Nullable<DiGi.PostgreSQL.Table.Enums.FilterOperator> FilterOperator { get; }
+```
+
+#### Property Value
+[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[FilterOperator](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.FilterOperator 'DiGi\.PostgreSQL\.Table\.Enums\.FilterOperator')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
+
+<a name='DiGi.PostgreSQL.Table.Classes.InvalidFilterException.Value'></a>
+
+## InvalidFilterException\.Value Property
+
+Gets the offending filter value when one could not be converted to the column's type; otherwise `null`\.
+
+```csharp
+public object? Value { get; }
+```
+
+#### Property Value
+[System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
+
 <a name='DiGi.PostgreSQL.Table.Classes.PartitioningOptions_UColumn_'></a>
 
 ## PartitioningOptions\<UColumn\> Class
@@ -1834,7 +1935,7 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[T](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetUniqueValuesAsync_T_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).T 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.GetUniqueValuesAsync\<T\>\(Npgsql\.NpgsqlConnection, string, DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup, int, System\.Threading\.CancellationToken\)\.T')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
-An enumerable containing unique values from the column, or null if input is invalid\.
+An enumerable containing unique values from the column; null when the connection is unavailable\.
 
 <a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetUniqueValuesAsync_T_(string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken)'></a>
 

@@ -541,7 +541,12 @@ A reference counter for unique query parameter names\.
 
 #### Returns
 [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')  
-True if the SQL condition was successfully built; otherwise, false\.
+`true` when the SQL condition was built; `false` only when a whitelisted column's stored type cannot be resolved to an Npgsql data type\.
+
+#### Exceptions
+
+[InvalidFilterException](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.InvalidFilterException 'DiGi\.PostgreSQL\.Table\.Classes\.InvalidFilterException')  
+A filter names a column the stored table does not hold, or carries a value that cannot be converted to the column's type\.
 
 <a name='DiGi.PostgreSQL.Table.Query.TryConvert(thisobject,object,NpgsqlTypes.NpgsqlDbType)'></a>
 

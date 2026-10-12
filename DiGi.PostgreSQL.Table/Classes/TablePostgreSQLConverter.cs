@@ -114,14 +114,14 @@ namespace DiGi.PostgreSQL.Table.Classes
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
-            if (existingColumns is null || existingColumns.Count == 0)
+            if (existingColumns is null)
             {
                 return null;
             }
 
             if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
             {
-                return null;
+                throw new InvalidFilterException(columnUniqueId);
             }
 
             // Resolve partitioning column from conversion options
@@ -198,14 +198,14 @@ namespace DiGi.PostgreSQL.Table.Classes
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
-            if (existingColumns is null || existingColumns.Count == 0)
+            if (existingColumns is null)
             {
                 return null;
             }
 
             if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
             {
-                return null;
+                throw new InvalidFilterException(columnUniqueId);
             }
 
             // Resolve partitioning column from conversion options
@@ -547,14 +547,14 @@ namespace DiGi.PostgreSQL.Table.Classes
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
-            if (existingColumns is null || existingColumns.Count == 0)
+            if (existingColumns is null)
             {
                 return null;
             }
 
             if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
             {
-                return null;
+                throw new InvalidFilterException(columnUniqueId);
             }
 
             string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
@@ -659,6 +659,11 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of nullable values of type <typeparamref name="T"/>, or null if the operation cannot be completed or no data is found.</returns>
         public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(string? columnUniqueId, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrWhiteSpace(columnUniqueId))
+            {
+                throw new InvalidFilterException(columnUniqueId ?? string.Empty);
+            }
+
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
 
             if (npgsqlConnection is null)
@@ -680,11 +685,16 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="filterGroup">The optional hierarchical filters to apply prior to retrieving the unique values.</param>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-        /// <returns>An enumerable containing unique values from the column, or null if input is invalid.</returns>
+        /// <returns>An enumerable containing unique values from the column; null when the connection is unavailable.</returns>
         public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(NpgsqlConnection? npgsqlConnection, string? columnUniqueId, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            // 1. Basic input validation: Check if connection exists and uniqueId (column name) is provided.
-            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId))
+            // 1. A blank column name is an invalid request (typed failure); a missing connection is a server-side condition (null result).
+            if (string.IsNullOrWhiteSpace(columnUniqueId))
+            {
+                throw new InvalidFilterException(columnUniqueId ?? string.Empty);
+            }
+
+            if (npgsqlConnection is null)
             {
                 return null;
             }
@@ -695,14 +705,14 @@ namespace DiGi.PostgreSQL.Table.Classes
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
-            if (columns_Existing is null || columns_Existing.Count == 0)
+            if (columns_Existing is null)
             {
                 return null;
             }
 
             if (!columns_Existing.Exists(x => x?.UniqueId() == columnUniqueId))
             {
-                return null;
+                throw new InvalidFilterException(columnUniqueId);
             }
 
             // 3. Initialize SQL command and parameters builder.

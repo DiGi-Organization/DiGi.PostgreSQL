@@ -21,7 +21,8 @@ namespace DiGi.PostgreSQL.Table
         /// <param name="stringBuilder_Sql">The string builder to append the resulting SQL condition to.</param>
         /// <param name="npgsqlParameterCollection">The parameter collection to bind Npgsql parameters to.</param>
         /// <param name="parameterIndex">A reference counter for unique query parameter names.</param>
-        /// <returns>True if the SQL condition was successfully built; otherwise, false.</returns>
+        /// <returns><c>true</c> when the SQL condition was built; <c>false</c> only when a whitelisted column's stored type cannot be resolved to an Npgsql data type.</returns>
+        /// <exception cref="InvalidFilterException">A filter names a column the stored table does not hold, or carries a value that cannot be converted to the column's type.</exception>
         public static bool TryBuildFilterGroupSql<UColumn>(this FilterGroup? filterGroup, List<UColumn> existingColumns, StringBuilder stringBuilder_Sql, NpgsqlParameterCollection npgsqlParameterCollection, ref int parameterIndex)
             where UColumn : IColumn
         {
@@ -44,7 +45,7 @@ namespace DiGi.PostgreSQL.Table
                     UColumn? column = existingColumns.Find(x => x?.UniqueId() == filterCondition.ColumnUniqueId);
                     if (column is null)
                     {
-                        return false; // Whitelist violation!
+                        throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator);
                     }
 
                     if (column.NpgsqlDbType() is not NpgsqlTypes.NpgsqlDbType npgsqlDbType)
@@ -65,7 +66,11 @@ namespace DiGi.PostgreSQL.Table
                         case FilterOperator.Contains:
                             if (filterCondition.Value is not null)
                             {
-                                if (column.TryGetValidValue(filterCondition.Value, out object? validValue_Contains) && validValue_Contains is not null)
+                                if (!column.TryGetValidValue(filterCondition.Value, out object? validValue_Contains))
+                                {
+                                    throw new InvalidFilterException(filterCondition.ColumnUniqueId, FilterOperator.Contains, filterCondition.Value);
+                                }
+                                else if (validValue_Contains is not null)
                                 {
                                     string paramName = $"filterParam_{parameterIndex}";
                                     parameterIndex++;
@@ -101,7 +106,17 @@ namespace DiGi.PostgreSQL.Table
                                 List<object> validValues = [];
                                 foreach (object item in enumerable)
                                 {
-                                    if (column.TryGetValidValue(item, out object? validItem) && validItem is not null)
+                                    bool itemIsNull = item is null
+                                        || (item is System.Text.Json.JsonElement itemJson && itemJson.ValueKind == System.Text.Json.JsonValueKind.Null);
+                                    if (itemIsNull)
+                                    {
+                                        continue;
+                                    }
+                                    if (!column.TryGetValidValue(item, out object? validItem))
+                                    {
+                                        throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, item);
+                                    }
+                                    if (validItem is not null)
                                     {
                                         validValues.Add(validItem);
                                     }
@@ -135,7 +150,7 @@ namespace DiGi.PostgreSQL.Table
                                 if (filterCondition.Value is System.Text.Json.JsonElement jsonElement_Scalar &&
                                     jsonElement_Scalar.ValueKind is System.Text.Json.JsonValueKind.Object or System.Text.Json.JsonValueKind.Undefined)
                                 {
-                                    conditions.Add(filterCondition.FilterOperator == FilterOperator.In ? "1=0" : "1=1");
+                                    throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
                                 }
                                 else if (column.TryGetValidValue(filterCondition.Value, out object? validValue) && validValue is not null)
                                 {
@@ -146,9 +161,13 @@ namespace DiGi.PostgreSQL.Table
                                     conditions.Add($"\"{filterCondition.ColumnUniqueId}\" {opSymbol} @{paramName}");
                                     npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValue });
                                 }
-                                else
+                                else if (filterCondition.Value is null)
                                 {
                                     conditions.Add(filterCondition.FilterOperator == FilterOperator.In ? "1=0" : "1=1");
+                                }
+                                else
+                                {
+                                    throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
                                 }
                             }
                             break;
@@ -190,9 +209,13 @@ namespace DiGi.PostgreSQL.Table
                                     }
                                 }
                             }
-                            else
+                            else if (filterCondition.Value is null)
                             {
                                 conditions.Add("1=0");
+                            }
+                            else
+                            {
+                                throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
                             }
                             break;
                     }
