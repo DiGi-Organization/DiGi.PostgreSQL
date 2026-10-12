@@ -85,7 +85,18 @@ namespace DiGi.PostgreSQL.Table
 
                         case FilterOperator.In:
                         case FilterOperator.NotIn:
-                            if (filterCondition.Value is System.Collections.IEnumerable enumerable && filterCondition.Value is not string)
+                            System.Collections.IEnumerable? enumerable = null;
+
+                            if (filterCondition.Value is System.Collections.IEnumerable enumerable_Collection && filterCondition.Value is not string)
+                            {
+                                enumerable = enumerable_Collection;
+                            }
+                            else if (filterCondition.Value is System.Text.Json.JsonElement jsonElement && jsonElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                            {
+                                enumerable = jsonElement.EnumerateArray();
+                            }
+
+                            if (enumerable is not null)
                             {
                                 List<object> validValues = [];
                                 foreach (object item in enumerable)
@@ -121,7 +132,12 @@ namespace DiGi.PostgreSQL.Table
                             }
                             else
                             {
-                                if (column.TryGetValidValue(filterCondition.Value, out object? validValue) && validValue is not null)
+                                if (filterCondition.Value is System.Text.Json.JsonElement jsonElement_Scalar &&
+                                    jsonElement_Scalar.ValueKind is System.Text.Json.JsonValueKind.Object or System.Text.Json.JsonValueKind.Undefined)
+                                {
+                                    conditions.Add(filterCondition.FilterOperator == FilterOperator.In ? "1=0" : "1=1");
+                                }
+                                else if (column.TryGetValidValue(filterCondition.Value, out object? validValue) && validValue is not null)
                                 {
                                     string paramName = $"filterParam_{parameterIndex}";
                                     parameterIndex++;
