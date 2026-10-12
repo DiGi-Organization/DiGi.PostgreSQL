@@ -1816,6 +1816,54 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn') objects matching the specified identifiers, or null if no matches are found\.
 
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetCountAsync(Npgsql.NpgsqlConnection,DiGi.PostgreSQL.Table.Classes.FilterGroup,object,int,System.Threading.CancellationToken)'></a>
+
+## TablePostgreSQLConverter\<UColumn\>\.GetCountAsync\(NpgsqlConnection, FilterGroup, object, int, CancellationToken\) Method
+
+Counts the rows of the partition scope matching an optional filter group — `COUNT(*)`, so the answer is the
+row count of the scope and does not depend on any column being non\-null\.
+
+Resolves partitioning settings dynamically from [TableConversionOptions](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.TableConversionOptions 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.TableConversionOptions').
+
+```csharp
+public System.Threading.Tasks.Task<System.Nullable<long>> GetCountAsync(Npgsql.NpgsqlConnection npgsqlConnection, DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup=null, object? partitionValue=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetCountAsync(Npgsql.NpgsqlConnection,DiGi.PostgreSQL.Table.Classes.FilterGroup,object,int,System.Threading.CancellationToken).npgsqlConnection'></a>
+
+`npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
+
+The active database connection instance\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetCountAsync(Npgsql.NpgsqlConnection,DiGi.PostgreSQL.Table.Classes.FilterGroup,object,int,System.Threading.CancellationToken).filterGroup'></a>
+
+`filterGroup` [FilterGroup](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterGroup 'DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup')
+
+The dynamic hierarchical filters to apply prior to counting; `null` counts the whole partition scope\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetCountAsync(Npgsql.NpgsqlConnection,DiGi.PostgreSQL.Table.Classes.FilterGroup,object,int,System.Threading.CancellationToken).partitionValue'></a>
+
+`partitionValue` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
+
+The partition key value; ignored if partitioning is disabled\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetCountAsync(Npgsql.NpgsqlConnection,DiGi.PostgreSQL.Table.Classes.FilterGroup,object,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetCountAsync(Npgsql.NpgsqlConnection,DiGi.PostgreSQL.Table.Classes.FilterGroup,object,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
+#### Returns
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+A task representing the async operation, returning the row count, `0` when nothing matches, or `null` when a filter column's stored type cannot be resolved to an Npgsql data type\.
+
 <a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken)'></a>
 
 ## TablePostgreSQLConverter\<UColumn\>\.GetHistogramSummaryAsync\<TColumn\>\(NpgsqlConnection, string, int, object, FilterGroup, HistogramBucketing, int, CancellationToken\) Method

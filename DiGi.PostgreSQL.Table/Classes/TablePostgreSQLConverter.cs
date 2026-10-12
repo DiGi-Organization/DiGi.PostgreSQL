@@ -304,6 +304,82 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
+        /// Counts the rows of the partition scope matching an optional filter group — <c>COUNT(*)</c>, so the answer is the
+        /// row count of the scope and does not depend on any column being non-null.
+        /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
+        /// </summary>
+        /// <param name="npgsqlConnection">The active database connection instance.</param>
+        /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to counting; <c>null</c> counts the whole partition scope.</param>
+        /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>A task representing the async operation, returning the row count, <c>0</c> when nothing matches, or <c>null</c> when a filter column's stored type cannot be resolved to an Npgsql data type.</returns>
+        public async Task<long?> GetCountAsync(NpgsqlConnection npgsqlConnection, FilterGroup? filterGroup = null, object? partitionValue = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
+        {
+            // Resolve partitioning column from conversion options
+            string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
+            bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            await using NpgsqlCommand npgsqlCommand_Count = new(string.Empty, npgsqlConnection);
+            npgsqlCommand_Count.CommandTimeout = commandTimeout;
+            if (hasPartition)
+            {
+                npgsqlCommand_Count.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+
+            int parameterIndex = 0;
+            StringBuilder stringBuilder_Where = new();
+            stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
+
+            if (filterGroup is not null)
+            {
+                // 1. Column Whitelist Validation to prevent SQL injection (filter columns)
+                HashSet<string> uniqueIds = [];
+                filterGroup.CollectColumnUniqueIds(uniqueIds);
+
+                List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
+                if (existingColumns is null)
+                {
+                    return null;
+                }
+
+                StringBuilder stringBuilder_Filter = new();
+                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Count.Parameters, ref parameterIndex))
+                {
+                    return null;
+                }
+
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    stringBuilder_Where.Append(" AND ").Append(stringBuilder_Filter);
+                }
+            }
+
+            npgsqlCommand_Count.CommandText = $@"
+                SELECT COUNT(*)
+                FROM ""{TableName}""
+                WHERE {stringBuilder_Where}";
+
+            object? resultValue = await npgsqlCommand_Count.ExecuteScalarAsync(cancellationToken);
+            if (resultValue is long resultLong)
+            {
+                return resultLong;
+            }
+
+            if (resultValue is int resultInt)
+            {
+                return resultInt;
+            }
+
+            if (resultValue is not null && Core.Query.IsNumeric(resultValue))
+            {
+                return System.Convert.ToInt64(resultValue);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Asynchronously retrieves a unique set of categories from the database.
         /// </summary>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
