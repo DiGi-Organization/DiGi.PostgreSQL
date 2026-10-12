@@ -39,6 +39,11 @@ namespace DiGi.PostgreSQL.Table.Classes
         protected abstract TableConversionOptions<UColumn>? TableConversionOptions { get; }
 
         /// <summary>
+        /// The maximum number of single-value aggregate measures a single <c>GetAggregateSummariesAsync</c> call may request. A guardrail against pathological requests, far above any realistic client.
+        /// </summary>
+        internal const int MaxAggregateSummariesMeasureCount = 100;
+
+        /// <summary>
         /// Samples partition data to dynamically detect the most common separator (comma, semicolon, or pipe).
         /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
         /// </summary>
@@ -128,16 +133,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
             bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
 
-            string sqlFunc = singlevalueAggregateFunction switch
-            {
-                Enums.SinglevalueAggregateFunction.Avg => $"AVG(\"{columnUniqueId}\")",
-                Enums.SinglevalueAggregateFunction.Sum => $"SUM(\"{columnUniqueId}\")",
-                Enums.SinglevalueAggregateFunction.Min => $"MIN(\"{columnUniqueId}\")",
-                Enums.SinglevalueAggregateFunction.Max => $"MAX(\"{columnUniqueId}\")",
-                Enums.SinglevalueAggregateFunction.Count => $"COUNT(\"{columnUniqueId}\")",
-                Enums.SinglevalueAggregateFunction.DistinctCount => $"COUNT(DISTINCT \"{columnUniqueId}\")",
-                _ => throw new System.ComponentModel.InvalidEnumArgumentException()
-            };
+            string sqlFunc = BuildSinglevalueAggregateExpression(columnUniqueId, singlevalueAggregateFunction);
 
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
@@ -173,6 +169,141 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync(cancellationToken);
             return System.Text.Json.Nodes.JsonValue.Create(resultValue == DBNull.Value ? null : resultValue);
+        }
+
+        /// <summary>
+        /// Builds the SELECT expression for one single-value aggregate measure over one column.
+        /// <para>Single source of truth shared by the single-measure and the batch aggregate paths, so the SQL of both cannot drift apart.</para>
+        /// </summary>
+        /// <param name="columnUniqueId">The unique identifier of the column to aggregate.</param>
+        /// <param name="singlevalueAggregateFunction">The single-value aggregation function to perform.</param>
+        /// <returns>The SQL expression, e.g. <c>AVG("column_unique_id")</c>.</returns>
+        internal static string BuildSinglevalueAggregateExpression(string columnUniqueId, Enums.SinglevalueAggregateFunction singlevalueAggregateFunction)
+        {
+            return singlevalueAggregateFunction switch
+            {
+                Enums.SinglevalueAggregateFunction.Avg => $"AVG(\"{columnUniqueId}\")",
+                Enums.SinglevalueAggregateFunction.Sum => $"SUM(\"{columnUniqueId}\")",
+                Enums.SinglevalueAggregateFunction.Min => $"MIN(\"{columnUniqueId}\")",
+                Enums.SinglevalueAggregateFunction.Max => $"MAX(\"{columnUniqueId}\")",
+                Enums.SinglevalueAggregateFunction.Count => $"COUNT(\"{columnUniqueId}\")",
+                Enums.SinglevalueAggregateFunction.DistinctCount => $"COUNT(DISTINCT \"{columnUniqueId}\")",
+                _ => throw new System.ComponentModel.InvalidEnumArgumentException()
+            };
+        }
+
+        /// <summary>
+        /// Builds the SELECT list for a batch of single-value aggregate measures, joining each measure's expression with a comma, in request order.
+        /// </summary>
+        /// <param name="measures">The measures whose expressions form the SELECT list, in request order.</param>
+        /// <returns>The comma-joined SELECT list, e.g. <c>AVG("column_a"), COUNT(DISTINCT "column_b")</c>.</returns>
+        internal static string BuildAggregateSummariesSelectList(IReadOnlyList<AggregateMeasure> measures)
+        {
+            return string.Join(", ", measures.Select(measure => BuildSinglevalueAggregateExpression(measure.ColumnUniqueId, measure.SinglevalueAggregateFunction)));
+        }
+
+        /// <summary>
+        /// Computes several single-value aggregate measures — different columns, different functions — over the same scope (one optional partition, one optional filter) in a single database command and a single round trip.
+        /// <para>Returns a <see cref="System.Text.Json.Nodes.JsonArray"/> with one value per measure, in request order; an aggregate that yields SQL <c>NULL</c> (e.g. <c>AVG</c> over zero rows) is preserved as JSON <c>null</c>. Multi-value (<c>SplitValueDistribution</c>, <c>SplitDistinctCount</c>) and histogram queries are not supported here: they are not scalar expressions.</para>
+        /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
+        /// </summary>
+        /// <param name="npgsqlConnection">The active database connection instance.</param>
+        /// <param name="measures">The measures to compute, in request order. Must not be <c>null</c> or empty, and must hold at most <see cref="MaxAggregateSummariesMeasureCount"/> entries. A column any measure names, or any filter condition names, that the stored table does not hold fails the whole call with <see cref="InvalidFilterException"/> — never a partial result.</param>
+        /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>A task representing the async operation, returning the measures as a <see cref="System.Text.Json.Nodes.JsonArray"/> in request order, or <c>null</c> when the column metadata read failed.</returns>
+        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummariesAsync(NpgsqlConnection npgsqlConnection, IReadOnlyList<AggregateMeasure> measures, object? partitionValue = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
+        {
+            if (measures is null)
+            {
+                throw new ArgumentNullException(nameof(measures));
+            }
+
+            if (measures.Count == 0)
+            {
+                throw new ArgumentException("At least one measure is required.", nameof(measures));
+            }
+
+            if (measures.Count > MaxAggregateSummariesMeasureCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(measures), measures.Count, $"At most {MaxAggregateSummariesMeasureCount} measures are supported per call.");
+            }
+
+            // 1. Column Whitelist Validation to prevent SQL injection (all measure columns + all filter columns)
+            HashSet<string> uniqueIds = [];
+            foreach (AggregateMeasure measure in measures)
+            {
+                uniqueIds.Add(measure.ColumnUniqueId);
+            }
+
+            filterGroup?.CollectColumnUniqueIds(uniqueIds);
+
+            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
+            if (existingColumns is null)
+            {
+                return null;
+            }
+
+            foreach (AggregateMeasure measure in measures)
+            {
+                if (!existingColumns.Exists(x => x?.UniqueId() == measure.ColumnUniqueId))
+                {
+                    throw new InvalidFilterException(measure.ColumnUniqueId);
+                }
+            }
+
+            // Resolve partitioning column from conversion options
+            string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
+            bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            StringBuilder stringBuilder_Where = new();
+            stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
+
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new(string.Empty, npgsqlConnection);
+            npgsqlCommand_Aggregate.CommandTimeout = commandTimeout;
+            if (hasPartition)
+            {
+                npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+
+            int parameterIndex = 0;
+            if (filterGroup is not null)
+            {
+                StringBuilder stringBuilder_Filter = new();
+                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
+                {
+                    return null;
+                }
+
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    stringBuilder_Where.Append(" AND ").Append(stringBuilder_Filter);
+                }
+            }
+
+            string commandText = $@"
+                SELECT {BuildAggregateSummariesSelectList(measures)}
+                FROM ""{TableName}""
+                WHERE {stringBuilder_Where}";
+
+            npgsqlCommand_Aggregate.CommandText = commandText;
+
+            await using NpgsqlDataReader npgsqlDataReader_Aggregate = await npgsqlCommand_Aggregate.ExecuteReaderAsync(cancellationToken);
+            if (!await npgsqlDataReader_Aggregate.ReadAsync(cancellationToken))
+            {
+                return null;
+            }
+
+            System.Text.Json.Nodes.JsonArray jsonArray_Result = new();
+            for (int i = 0; i < measures.Count; i++)
+            {
+                object? resultValue = npgsqlDataReader_Aggregate.IsDBNull(i) ? null : npgsqlDataReader_Aggregate.GetValue(i);
+                jsonArray_Result.Add(System.Text.Json.Nodes.JsonValue.Create(resultValue));
+            }
+
+            return jsonArray_Result;
         }
 
         /// <summary>

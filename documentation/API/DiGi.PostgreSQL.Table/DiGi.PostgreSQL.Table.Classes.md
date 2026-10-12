@@ -997,6 +997,20 @@ public TablePostgreSQLConverter(DiGi.PostgreSQL.Classes.ConnectionData? connecti
 `connectionData` [DiGi\.PostgreSQL\.Classes\.ConnectionData](https://learn.microsoft.com/en-us/dotnet/api/digi.postgresql.classes.connectiondata 'DiGi\.PostgreSQL\.Classes\.ConnectionData')
 
 The connection configuration details used to connect to the PostgreSQL database\. This value can be null\.
+### Fields
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.MaxAggregateSummariesMeasureCount'></a>
+
+## TablePostgreSQLConverter\<UColumn\>\.MaxAggregateSummariesMeasureCount Field
+
+The maximum number of single\-value aggregate measures a single `GetAggregateSummariesAsync` call may request\. A guardrail against pathological requests, far above any realistic client\.
+
+```csharp
+internal const int MaxAggregateSummariesMeasureCount = 100;
+```
+
+#### Field Value
+[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 ### Properties
 
 <a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.TableConversionOptions'></a>
@@ -1025,6 +1039,56 @@ public abstract string TableName { get; }
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 ### Methods
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.BuildAggregateSummariesSelectList(System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_)'></a>
+
+## TablePostgreSQLConverter\<UColumn\>\.BuildAggregateSummariesSelectList\(IReadOnlyList\<AggregateMeasure\>\) Method
+
+Builds the SELECT list for a batch of single\-value aggregate measures, joining each measure's expression with a comma, in request order\.
+
+```csharp
+internal static string BuildAggregateSummariesSelectList(System.Collections.Generic.IReadOnlyList<DiGi.PostgreSQL.Table.Classes.AggregateMeasure> measures);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.BuildAggregateSummariesSelectList(System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_).measures'></a>
+
+`measures` [System\.Collections\.Generic\.IReadOnlyList&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1 'System\.Collections\.Generic\.IReadOnlyList\`1')[AggregateMeasure](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.AggregateMeasure 'DiGi\.PostgreSQL\.Table\.Classes\.AggregateMeasure')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1 'System\.Collections\.Generic\.IReadOnlyList\`1')
+
+The measures whose expressions form the SELECT list, in request order\.
+
+#### Returns
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
+The comma\-joined SELECT list, e\.g\. `AVG("column_a"), COUNT(DISTINCT "column_b")`\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.BuildSinglevalueAggregateExpression(string,DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction)'></a>
+
+## TablePostgreSQLConverter\<UColumn\>\.BuildSinglevalueAggregateExpression\(string, SinglevalueAggregateFunction\) Method
+
+Builds the SELECT expression for one single\-value aggregate measure over one column\.
+
+Single source of truth shared by the single-measure and the batch aggregate paths, so the SQL of both cannot drift apart.
+
+```csharp
+internal static string BuildSinglevalueAggregateExpression(string columnUniqueId, DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction singlevalueAggregateFunction);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.BuildSinglevalueAggregateExpression(string,DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction).columnUniqueId'></a>
+
+`columnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The unique identifier of the column to aggregate\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.BuildSinglevalueAggregateExpression(string,DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction).singlevalueAggregateFunction'></a>
+
+`singlevalueAggregateFunction` [SinglevalueAggregateFunction](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction 'DiGi\.PostgreSQL\.Table\.Enums\.SinglevalueAggregateFunction')
+
+The single\-value aggregation function to perform\.
+
+#### Returns
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
+The SQL expression, e\.g\. `AVG("column_unique_id")`\.
 
 <a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object,int,System.Threading.CancellationToken)'></a>
 
@@ -1072,6 +1136,61 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task representing the async operation, returning the detected separator character string \(e\.g\. ",", ";", or "\|"\)\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummariesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken)'></a>
+
+## TablePostgreSQLConverter\<UColumn\>\.GetAggregateSummariesAsync\(NpgsqlConnection, IReadOnlyList\<AggregateMeasure\>, object, FilterGroup, int, CancellationToken\) Method
+
+Computes several single\-value aggregate measures — different columns, different functions — over the same scope \(one optional partition, one optional filter\) in a single database command and a single round trip\.
+
+Returns a [System\.Text\.Json\.Nodes\.JsonArray](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonarray 'System\.Text\.Json\.Nodes\.JsonArray') with one value per measure, in request order; an aggregate that yields SQL `NULL` (e.g. `AVG` over zero rows) is preserved as JSON `null`. Multi-value (`SplitValueDistribution`, `SplitDistinctCount`) and histogram queries are not supported here: they are not scalar expressions.
+
+Resolves partitioning settings dynamically from [TableConversionOptions](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.TableConversionOptions 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.TableConversionOptions').
+
+```csharp
+public System.Threading.Tasks.Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummariesAsync(Npgsql.NpgsqlConnection npgsqlConnection, System.Collections.Generic.IReadOnlyList<DiGi.PostgreSQL.Table.Classes.AggregateMeasure> measures, object? partitionValue=null, DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummariesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).npgsqlConnection'></a>
+
+`npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
+
+The active database connection instance\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummariesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).measures'></a>
+
+`measures` [System\.Collections\.Generic\.IReadOnlyList&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1 'System\.Collections\.Generic\.IReadOnlyList\`1')[AggregateMeasure](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.AggregateMeasure 'DiGi\.PostgreSQL\.Table\.Classes\.AggregateMeasure')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1 'System\.Collections\.Generic\.IReadOnlyList\`1')
+
+The measures to compute, in request order\. Must not be `null` or empty, and must hold at most [MaxAggregateSummariesMeasureCount](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.MaxAggregateSummariesMeasureCount 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.MaxAggregateSummariesMeasureCount') entries\. A column any measure names, or any filter condition names, that the stored table does not hold fails the whole call with [InvalidFilterException](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.InvalidFilterException 'DiGi\.PostgreSQL\.Table\.Classes\.InvalidFilterException') — never a partial result\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummariesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).partitionValue'></a>
+
+`partitionValue` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
+
+The partition key value; ignored if partitioning is disabled\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummariesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).filterGroup'></a>
+
+`filterGroup` [FilterGroup](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterGroup 'DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup')
+
+The dynamic hierarchical filters to apply prior to aggregation\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummariesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummariesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IReadOnlyList_DiGi.PostgreSQL.Table.Classes.AggregateMeasure_,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
+#### Returns
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Text\.Json\.Nodes\.JsonNode](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode 'System\.Text\.Json\.Nodes\.JsonNode')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+A task representing the async operation, returning the measures as a [System\.Text\.Json\.Nodes\.JsonArray](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonarray 'System\.Text\.Json\.Nodes\.JsonArray') in request order, or `null` when the column metadata read failed\.
 
 <a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken)'></a>
 
@@ -2879,3 +2998,67 @@ public ValuePartitioningRule(System.Text.Json.Nodes.JsonObject jsonObject);
 `jsonObject` [System\.Text\.Json\.Nodes\.JsonObject](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonobject 'System\.Text\.Json\.Nodes\.JsonObject')
 
 The JSON object containing the rule definition\.
+### Structs
+
+<a name='DiGi.PostgreSQL.Table.Classes.AggregateMeasure'></a>
+
+## AggregateMeasure Struct
+
+One measure of a multi\-measure aggregate request: the column to aggregate and the single\-value aggregate function to apply to it\.
+
+```csharp
+public readonly record struct AggregateMeasure : System.IEquatable<DiGi.PostgreSQL.Table.Classes.AggregateMeasure>
+```
+
+Implements [System\.IEquatable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1 'System\.IEquatable\`1')[AggregateMeasure](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.AggregateMeasure 'DiGi\.PostgreSQL\.Table\.Classes\.AggregateMeasure')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.iequatable-1 'System\.IEquatable\`1')
+### Constructors
+
+<a name='DiGi.PostgreSQL.Table.Classes.AggregateMeasure.AggregateMeasure(string,DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction)'></a>
+
+## AggregateMeasure\(string, SinglevalueAggregateFunction\) Constructor
+
+One measure of a multi\-measure aggregate request: the column to aggregate and the single\-value aggregate function to apply to it\.
+
+```csharp
+public AggregateMeasure(string ColumnUniqueId, DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction SinglevalueAggregateFunction);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.AggregateMeasure.AggregateMeasure(string,DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction).ColumnUniqueId'></a>
+
+`ColumnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The unique identifier of the column to aggregate\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.AggregateMeasure.AggregateMeasure(string,DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction).SinglevalueAggregateFunction'></a>
+
+`SinglevalueAggregateFunction` [SinglevalueAggregateFunction](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction 'DiGi\.PostgreSQL\.Table\.Enums\.SinglevalueAggregateFunction')
+
+The single\-value aggregate function to apply to the column\.
+### Properties
+
+<a name='DiGi.PostgreSQL.Table.Classes.AggregateMeasure.ColumnUniqueId'></a>
+
+## AggregateMeasure\.ColumnUniqueId Property
+
+The unique identifier of the column to aggregate\.
+
+```csharp
+public string ColumnUniqueId { get; init; }
+```
+
+#### Property Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.PostgreSQL.Table.Classes.AggregateMeasure.SinglevalueAggregateFunction'></a>
+
+## AggregateMeasure\.SinglevalueAggregateFunction Property
+
+The single\-value aggregate function to apply to the column\.
+
+```csharp
+public DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction SinglevalueAggregateFunction { get; init; }
+```
+
+#### Property Value
+[SinglevalueAggregateFunction](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.SinglevalueAggregateFunction 'DiGi\.PostgreSQL\.Table\.Enums\.SinglevalueAggregateFunction')
