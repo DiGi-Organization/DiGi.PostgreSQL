@@ -59,7 +59,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     coalesce(sum(length(""{columnUniqueId}"") - length(replace(""{columnUniqueId}"", ';', ''))), 0) as count_semi,
                     coalesce(sum(length(""{columnUniqueId}"") - length(replace(""{columnUniqueId}"", '|', ''))), 0) as count_pipe
                 FROM (
-                    SELECT ""{columnUniqueId}""
+                    SELECT ""{columnUniqueId}""::text
                     FROM ""{TableName}""
                     {(hasPartition ? $"WHERE \"{partitionColumnUniqueId}\" = @partitionValue" : "WHERE 1=1")}
                       AND ""{columnUniqueId}"" IS NOT NULL
@@ -245,7 +245,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     commandText = $@"
                         SELECT trim(both ' ' from unnested_item) as item, count(*) as count
                         FROM (
-                            SELECT unnest(string_to_array(""{columnUniqueId}"", @separator)) as unnested_item
+                            SELECT unnest(string_to_array(""{columnUniqueId}""::text, @separator)) as unnested_item
                             FROM ""{TableName}""
                             WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
                         ) subquery
@@ -257,7 +257,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     commandText = $@"
                         SELECT count(DISTINCT trim(both ' ' from unnested_item))
                         FROM (
-                            SELECT unnest(string_to_array(""{columnUniqueId}"", @separator)) as unnested_item
+                            SELECT unnest(string_to_array(""{columnUniqueId}""::text, @separator)) as unnested_item
                             FROM ""{TableName}""
                             WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
                         ) subquery;";
