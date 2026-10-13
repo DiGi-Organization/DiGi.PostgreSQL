@@ -1011,6 +1011,21 @@ internal const int MaxAggregateSummariesMeasureCount = 100;
 
 #### Field Value
 [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.MaxSplitValueDistributionGroups'></a>
+
+## TablePostgreSQLConverter\<UColumn\>\.MaxSplitValueDistributionGroups Field
+
+The maximum number of distinct\-value groups a single `SplitValueDistribution` call may return\.
+
+A guardrail against a high-cardinality column turning a cheap `GROUP BY` aggregate into an unbounded response: without a cap a single request can pull millions of rows (ZiolkowskiJakub/DiGi.PostgreSQL#16).
+
+```csharp
+internal const int MaxSplitValueDistributionGroups = 1000;
+```
+
+#### Field Value
+[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 ### Properties
 
 <a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.TableConversionOptions'></a>
@@ -1192,70 +1207,76 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Text\.Json\.Nodes\.JsonNode](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode 'System\.Text\.Json\.Nodes\.JsonNode')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task representing the async operation, returning the measures as a [System\.Text\.Json\.Nodes\.JsonArray](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonarray 'System\.Text\.Json\.Nodes\.JsonArray') in request order, or `null` when the column metadata read failed\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetAggregateSummaryAsync\<TColumn\>\(NpgsqlConnection, string, MultivalueAggregateFunction, object, string, FilterGroup, int, CancellationToken\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetAggregateSummaryAsync\<TColumn\>\(NpgsqlConnection, string, MultivalueAggregateFunction, object, string, FilterGroup, int, int, CancellationToken\) Method
 
 Computes multi\-value aggregate statistics on a specific column in a partition with optional dynamic filtering\.
 
 Resolves partitioning settings dynamically from [TableConversionOptions](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.TableConversionOptions 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.TableConversionOptions').
 
 ```csharp
-public System.Threading.Tasks.Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(Npgsql.NpgsqlConnection npgsqlConnection, string columnUniqueId, DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue=null, string? separator=null, DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
+public System.Threading.Tasks.Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(Npgsql.NpgsqlConnection npgsqlConnection, string columnUniqueId, DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue=null, string? separator=null, DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup=null, int maxGroups=1000, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
     where TColumn : UColumn;
 ```
 #### Type parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).TColumn'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).TColumn'></a>
 
 `TColumn`
 
 The column type implementation\.
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The active database connection instance\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).columnUniqueId'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).columnUniqueId'></a>
 
 `columnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The unique identifier of the column to aggregate\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).multivalueAggregateFunction'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).multivalueAggregateFunction'></a>
 
 `multivalueAggregateFunction` [MultivalueAggregateFunction](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction 'DiGi\.PostgreSQL\.Table\.Enums\.MultivalueAggregateFunction')
 
 The multi\-value aggregation function to perform\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).partitionValue'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).partitionValue'></a>
 
 `partitionValue` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
 
 The partition key value; ignored if partitioning is disabled\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).separator'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).separator'></a>
 
 `separator` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The custom separator character; if null, it is dynamically detected\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).filterGroup'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).filterGroup'></a>
 
 `filterGroup` [FilterGroup](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterGroup 'DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup')
 
 The dynamic hierarchical filters to apply prior to aggregation\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).commandTimeout'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).maxGroups'></a>
+
+`maxGroups` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+For [SplitValueDistribution](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction.SplitValueDistribution 'DiGi\.PostgreSQL\.Table\.Enums\.MultivalueAggregateFunction\.SplitValueDistribution') only, the maximum number of distinct\-value groups to return; the `(maxGroups + 1)`\-th row is returned as a truncation marker, so a result longer than `maxGroups` means the distribution was cut and the caller drops the last element\. Ignored by [SplitDistinctCount](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction.SplitDistinctCount 'DiGi\.PostgreSQL\.Table\.Enums\.MultivalueAggregateFunction\.SplitDistinctCount')\. Range \[1, [MaxSplitValueDistributionGroups](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.MaxSplitValueDistributionGroups 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.MaxSplitValueDistributionGroups')\]; the default keeps every legitimate low\-cardinality distribution complete\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).commandTimeout'></a>
 
 `commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).cancellationToken'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetAggregateSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction,object,string,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,int,System.Threading.CancellationToken).cancellationToken'></a>
 
 `cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
 

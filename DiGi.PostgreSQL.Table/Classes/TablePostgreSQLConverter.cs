@@ -44,6 +44,12 @@ namespace DiGi.PostgreSQL.Table.Classes
         internal const int MaxAggregateSummariesMeasureCount = 100;
 
         /// <summary>
+        /// The maximum number of distinct-value groups a single <c>SplitValueDistribution</c> call may return.
+        /// <para>A guardrail against a high-cardinality column turning a cheap <c>GROUP BY</c> aggregate into an unbounded response: without a cap a single request can pull millions of rows (ZiolkowskiJakub/DiGi.PostgreSQL#16).</para>
+        /// </summary>
+        internal const int MaxSplitValueDistributionGroups = 1000;
+
+        /// <summary>
         /// Samples partition data to dynamically detect the most common separator (comma, semicolon, or pipe).
         /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
         /// </summary>
@@ -317,12 +323,18 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
         /// <param name="separator">The custom separator character; if null, it is dynamically detected.</param>
         /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
+        /// <param name="maxGroups">For <see cref="Enums.MultivalueAggregateFunction.SplitValueDistribution"/> only, the maximum number of distinct-value groups to return; the <c>(maxGroups + 1)</c>-th row is returned as a truncation marker, so a result longer than <c>maxGroups</c> means the distribution was cut and the caller drops the last element. Ignored by <see cref="Enums.MultivalueAggregateFunction.SplitDistinctCount"/>. Range [1, <see cref="MaxSplitValueDistributionGroups"/>]; the default keeps every legitimate low-cardinality distribution complete.</param>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task representing the async operation, returning the aggregation result as a <see cref="System.Text.Json.Nodes.JsonNode"/>.</returns>
-        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue = null, string? separator = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
+        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue = null, string? separator = null, FilterGroup? filterGroup = null, int maxGroups = MaxSplitValueDistributionGroups, int commandTimeout = 30, CancellationToken cancellationToken = default)
             where TColumn : UColumn
         {
+            if (maxGroups < 1 || maxGroups > MaxSplitValueDistributionGroups)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxGroups), maxGroups, $"maxGroups must be between 1 and {MaxSplitValueDistributionGroups}.");
+            }
+
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
             HashSet<string> uniqueIds = [columnUniqueId];
 
@@ -381,7 +393,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                             WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
                         ) subquery
                         GROUP BY item
-                        ORDER BY count DESC;";
+                        ORDER BY count DESC
+                        LIMIT @maxGroupsPlusOne;";
                 }
                 else
                 {
@@ -409,6 +422,11 @@ namespace DiGi.PostgreSQL.Table.Classes
                     actualSeparator = await DetectSeparatorAsync(npgsqlConnection, columnUniqueId, partitionValue, commandTimeout, cancellationToken);
                 }
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("separator", actualSeparator);
+            }
+
+            if (multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitValueDistribution)
+            {
+                npgsqlCommand_Aggregate.Parameters.AddWithValue("maxGroupsPlusOne", maxGroups + 1);
             }
 
             if (multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitValueDistribution)
