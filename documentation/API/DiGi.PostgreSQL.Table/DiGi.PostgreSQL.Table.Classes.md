@@ -1018,7 +1018,7 @@ internal const int MaxAggregateSummariesMeasureCount = 100;
 
 The maximum number of distinct\-value groups a single `SplitValueDistribution` call may return\.
 
-A guardrail against a high-cardinality column turning a cheap `GROUP BY` aggregate into an unbounded response: without a cap a single request can pull millions of rows (ZiolkowskiJakub/DiGi.PostgreSQL#16).
+A guardrail against a high-cardinality column turning a cheap `GROUP BY` aggregate into an unbounded response: without a cap a single request can pull millions of rows (DiGi-Organization/DiGi.PostgreSQL#16).
 
 ```csharp
 internal const int MaxSplitValueDistributionGroups = 1000;

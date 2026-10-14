@@ -45,7 +45,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         /// <summary>
         /// The maximum number of distinct-value groups a single <c>SplitValueDistribution</c> call may return.
-        /// <para>A guardrail against a high-cardinality column turning a cheap <c>GROUP BY</c> aggregate into an unbounded response: without a cap a single request can pull millions of rows (ZiolkowskiJakub/DiGi.PostgreSQL#16).</para>
+        /// <para>A guardrail against a high-cardinality column turning a cheap <c>GROUP BY</c> aggregate into an unbounded response: without a cap a single request can pull millions of rows (DiGi-Organization/DiGi.PostgreSQL#16).</para>
         /// </summary>
         internal const int MaxSplitValueDistributionGroups = 1000;
 
