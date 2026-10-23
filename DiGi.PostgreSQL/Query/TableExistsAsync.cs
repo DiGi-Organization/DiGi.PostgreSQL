@@ -52,7 +52,9 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            if (Create.NpgsqlConnection(connectionData) is not NpgsqlConnection npgsqlConnection)
+            // Disposed on return so the connection goes back to the pool - an undisposed one keeps its server backend open for the life of the process (#18).
+            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(connectionData);
+            if (npgsqlConnection is null)
             {
                 return false;
             }

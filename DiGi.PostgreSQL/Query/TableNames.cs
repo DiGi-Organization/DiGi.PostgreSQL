@@ -39,10 +39,14 @@ namespace DiGi.PostgreSQL
         /// <returns>A list of strings containing the table names, or null if the connection cannot be established.</returns>
         public static List<string>? TableNames(this ConnectionData? connectionData)
         {
-            if (Create.NpgsqlConnection(connectionData) is not NpgsqlConnection npgsqlConnection)
+            // Opened here and disposed on return so the connection goes back to the pool (#18).
+            using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(connectionData);
+            if (npgsqlConnection is null)
             {
                 return null;
             }
+
+            npgsqlConnection.Open();
 
             return TableNames(npgsqlConnection);
         }
