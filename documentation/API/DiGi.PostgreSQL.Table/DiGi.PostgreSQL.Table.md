@@ -321,6 +321,29 @@ public static class Query
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Query
 ### Methods
 
+<a name='DiGi.PostgreSQL.Table.Query.DatabaseValue(thisobject)'></a>
+
+## Query\.DatabaseValue\(this object\) Method
+
+Widens an unsigned integer value to the signed type its column is mapped to in the database, because Npgsql does not write unsigned CLR types\.
+
+[System\.UInt16](https://learn.microsoft.com/en-us/dotnet/api/system.uint16 'System\.UInt16') becomes [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32'), [System\.UInt32](https://learn.microsoft.com/en-us/dotnet/api/system.uint32 'System\.UInt32') becomes [System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64') and [System\.UInt64](https://learn.microsoft.com/en-us/dotnet/api/system.uint64 'System\.UInt64') becomes [System\.Decimal](https://learn.microsoft.com/en-us/dotnet/api/system.decimal 'System\.Decimal'), matching [NpgsqlDbType\(this Type\)](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.NpgsqlDbType(thisSystem.Type) 'DiGi\.PostgreSQL\.Table\.Query\.NpgsqlDbType\(this System\.Type\)').
+
+```csharp
+public static object? DatabaseValue(this object? value);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Query.DatabaseValue(thisobject).value'></a>
+
+`value` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
+
+The value returned by the column's value conversion\.
+
+#### Returns
+[System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')  
+The widened value, or [value](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.DatabaseValue(thisobject).value 'DiGi\.PostgreSQL\.Table\.Query\.DatabaseValue\(this object\)\.value') unchanged when it is not an unsigned integer \(including [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null')\)\.
+
 <a name='DiGi.PostgreSQL.Table.Query.DataTypeName(thisDiGi.Core.IO.Table.Interfaces.IColumn)'></a>
 
 ## Query\.DataTypeName\(this IColumn\) Method

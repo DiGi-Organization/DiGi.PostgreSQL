@@ -118,7 +118,7 @@ namespace DiGi.PostgreSQL.Table
                                     }
                                     if (validItem is not null)
                                     {
-                                        validValues.Add(validItem);
+                                        validValues.Add(validItem.DatabaseValue()!);
                                     }
                                 }
 
@@ -159,7 +159,7 @@ namespace DiGi.PostgreSQL.Table
                                     string opSymbol = filterCondition.FilterOperator == FilterOperator.In ? "=" : "!=";
 
                                     conditions.Add($"\"{filterCondition.ColumnUniqueId}\" {opSymbol} @{paramName}");
-                                    npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValue });
+                                    npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValue.DatabaseValue() });
                                 }
                                 else if (filterCondition.Value is null)
                                 {
@@ -191,7 +191,7 @@ namespace DiGi.PostgreSQL.Table
                                     };
 
                                     conditions.Add($"\"{filterCondition.ColumnUniqueId}\" {opSymbol} @{paramName}");
-                                    npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValue_Comp });
+                                    npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValue_Comp.DatabaseValue() });
                                 }
                                 else
                                 {
