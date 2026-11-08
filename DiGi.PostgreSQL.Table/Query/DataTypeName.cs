@@ -1,6 +1,6 @@
 ﻿using DiGi.Core.IO.Table.Interfaces;
-using System.Globalization;
 using System;
+using System.Globalization;
 
 namespace DiGi.PostgreSQL.Table
 {
