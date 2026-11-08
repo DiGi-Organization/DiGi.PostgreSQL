@@ -5,7 +5,7 @@
     /// </summary>
     public class PartitionReferenceGeneratingEventArgs : PostgreSQL.Classes.ReferenceGeneratingEventArgs
     {
-        private PartitionReference? partitionReference = null;
+        private PartitionReference? partitionReference;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionReferenceGeneratingEventArgs"/> class.

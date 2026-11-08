@@ -90,7 +90,7 @@ namespace DiGi.PostgreSQL
             string checkDbSql = "SELECT 1 FROM pg_database WHERE datname = @dbName";
             bool databaseExists = false;
 
-            await using (NpgsqlCommand npgsqlCommand_Check = new NpgsqlCommand(checkDbSql, npgsqlConnection))
+            await using (NpgsqlCommand npgsqlCommand_Check = new(checkDbSql, npgsqlConnection))
             {
                 npgsqlCommand_Check.CommandTimeout = commandTimeout;
                 npgsqlCommand_Check.Parameters.AddWithValue("dbName", targetDatabaseName);
@@ -119,7 +119,7 @@ namespace DiGi.PostgreSQL
                 string checkTsSql = "SELECT 1 FROM pg_tablespace WHERE spcname = @tsName";
                 bool tablespaceExists = false;
 
-                await using (NpgsqlCommand npgsqlCommand_TsCheck = new NpgsqlCommand(checkTsSql, npgsqlConnection))
+                await using (NpgsqlCommand npgsqlCommand_TsCheck = new(checkTsSql, npgsqlConnection))
                 {
                     npgsqlCommand_TsCheck.CommandTimeout = commandTimeout;
                     npgsqlCommand_TsCheck.Parameters.AddWithValue("tsName", tablespaceName!);
@@ -133,7 +133,7 @@ namespace DiGi.PostgreSQL
                     string escapedDir = directory!.Replace("'", "''");
                     string createTsSql = $"CREATE TABLESPACE \"{escapedTsName}\" LOCATION '{escapedDir}'";
 
-                    await using NpgsqlCommand npgsqlCommand_CreateTs = new NpgsqlCommand(createTsSql, npgsqlConnection);
+                    await using NpgsqlCommand npgsqlCommand_CreateTs = new(createTsSql, npgsqlConnection);
                     npgsqlCommand_CreateTs.CommandTimeout = commandTimeout;
                     await npgsqlCommand_CreateTs.ExecuteNonQueryAsync(cancellationToken);
                 }
@@ -151,7 +151,7 @@ namespace DiGi.PostgreSQL
 
             try
             {
-                await using NpgsqlCommand npgsqlCommand_Create = new NpgsqlCommand(createDbSql, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand_Create = new(createDbSql, npgsqlConnection);
                 npgsqlCommand_Create.CommandTimeout = commandTimeout;
                 await npgsqlCommand_Create.ExecuteNonQueryAsync(cancellationToken);
                 return true;

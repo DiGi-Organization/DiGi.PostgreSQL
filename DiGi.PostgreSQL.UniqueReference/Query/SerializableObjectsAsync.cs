@@ -64,7 +64,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 FROM objects_{(int)keyValuePair.Key}
                 WHERE partition_id = ANY(@partition_ids);";
 
-                await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
                 npgsqlCommand.CommandTimeout = commandTimeout;
 
                 npgsqlCommand.Parameters.AddWithValue("partition_ids", keyValuePair.Value.ConvertAll(x => x.Id).ToArray());
@@ -144,7 +144,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                             SELECT UNNEST(@partition_ids) as t_id, UNNEST(@unique_ids) as u_id
                         ) as search_set ON o.partition_id = search_set.t_id AND o.unique_id = search_set.u_id;";
 
-                    await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                    await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
                     npgsqlCommand.CommandTimeout = commandTimeout;
 
                     npgsqlCommand.Parameters.Add("partition_ids", NpgsqlDbType.Array | NpgsqlDbType.Smallint);

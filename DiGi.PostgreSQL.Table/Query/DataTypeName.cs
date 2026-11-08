@@ -1,4 +1,5 @@
 ﻿using DiGi.Core.IO.Table.Interfaces;
+using System.Globalization;
 using System;
 
 namespace DiGi.PostgreSQL.Table
@@ -34,7 +35,7 @@ namespace DiGi.PostgreSQL.Table
                     return "double precision";
             }
 
-            return npgsqlDbType.ToString()?.ToLower();
+            return npgsqlDbType.ToString()?.ToLower(CultureInfo.CurrentCulture);
         }
     }
 }

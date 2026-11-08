@@ -23,7 +23,7 @@ namespace DiGi.PostgreSQL
             // in standard SQL, but we should ensure the tableName is sanitized or trusted.
             string sql = $"SELECT EXISTS (SELECT 1 FROM public.{tableName} LIMIT 1);";
 
-            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection);
+            using NpgsqlCommand npgsqlCommand = new(sql, npgsqlConnection);
 
             try
             {

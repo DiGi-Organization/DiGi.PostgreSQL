@@ -83,6 +83,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <param name="value">The numeric value to be formatted.</param>
         /// <returns>A string representing the numeric value in the parametric format.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1000:Do not declare static members on generic types", Justification = "Public formatter reached as RangePartitioningRule<TNumber>.ToString; moving it is a breaking change.")]
         public static string ToString(TNumber value)
         {
             if (value is ISpanFormattable spanFormattable)
@@ -126,7 +127,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             string fallback = value.ToString("G", CultureInfo.InvariantCulture);
             if (TNumber.IsNegative(value))
             {
-                fallback = "m" + fallback.Substring(1);
+                fallback = string.Concat("m", fallback.AsSpan(1));
             }
             return fallback.Replace('.', 'p');
         }

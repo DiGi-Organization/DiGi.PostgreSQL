@@ -1,5 +1,6 @@
 ﻿using DiGi.PostgreSQL.Classes;
 using Npgsql;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,7 +45,7 @@ namespace DiGi.PostgreSQL
             npgsqlCommand.CommandTimeout = commandTimeout;
             npgsqlCommand.Parameters.AddWithValue("tablespaceName", tablespaceName);
 
-            int count = System.Convert.ToInt32(await npgsqlCommand.ExecuteScalarAsync(cancellationToken));
+            int count = System.Convert.ToInt32(await npgsqlCommand.ExecuteScalarAsync(cancellationToken), CultureInfo.CurrentCulture);
 
             if (count == 0)
             {

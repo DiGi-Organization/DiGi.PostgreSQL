@@ -3,6 +3,7 @@ using DiGi.Core.IO.Table.Interfaces;
 using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using NpgsqlTypes;
+using System.Globalization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -222,10 +223,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <returns>A task representing the async operation, returning the measures as a <see cref="System.Text.Json.Nodes.JsonArray"/> in request order, or <c>null</c> when the column metadata read failed.</returns>
         public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummariesAsync(NpgsqlConnection npgsqlConnection, IReadOnlyList<AggregateMeasure> measures, object? partitionValue = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            if (measures is null)
-            {
-                throw new ArgumentNullException(nameof(measures));
-            }
+            ArgumentNullException.ThrowIfNull(measures);
 
             if (measures.Count == 0)
             {
@@ -522,7 +520,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             if (resultValue is not null && Core.Query.IsNumeric(resultValue))
             {
-                return System.Convert.ToInt64(resultValue);
+                return System.Convert.ToInt64(resultValue, CultureInfo.CurrentCulture);
             }
 
             return null;
@@ -860,10 +858,10 @@ namespace DiGi.PostgreSQL.Table.Classes
                 System.Text.Json.Nodes.JsonObject jsonObject_Bucket = new()
                 {
                     ["bucket"] = npgsqlDataReader_Histogram.GetInt32(0),
-                    ["rangeStart"] = npgsqlDataReader_Histogram.IsDBNull(1) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(1))
+                    ["rangeStart"] = npgsqlDataReader_Histogram.IsDBNull(1) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(1), CultureInfo.CurrentCulture)
                 };
 
-                jsonObject_Bucket["rangeEnd"] = npgsqlDataReader_Histogram.IsDBNull(2) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(2));
+                jsonObject_Bucket["rangeEnd"] = npgsqlDataReader_Histogram.IsDBNull(2) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(2), CultureInfo.CurrentCulture);
                 jsonObject_Bucket["count"] = npgsqlDataReader_Histogram.GetInt64(3);
                 jsonArray_Result.Add(jsonObject_Bucket);
             }
@@ -945,7 +943,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             npgsqlCommand.CommandTimeout = commandTimeout;
 
             StringBuilder stringBuilder_Where = new();
-            stringBuilder_Where.Append($"\"{columnUniqueId}\" IS NOT NULL");
+            stringBuilder_Where.Append(CultureInfo.CurrentCulture, $"\"{columnUniqueId}\" IS NOT NULL");
 
             int parameterIndex = 0;
             if (filterGroup is not null)
@@ -1308,7 +1306,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                         {
                             whereClause.Append(" AND ");
                         }
-                        whereClause.Append($"\"{pkCol.UniqueId()}\" = {paramName}");
+                        whereClause.Append(CultureInfo.CurrentCulture, $"\"{pkCol.UniqueId()}\" = {paramName}");
                         parameters.Add(new NpgsqlParameter(paramName, row[pkCol.Index] ?? DBNull.Value));
                         paramIdx++;
                     }
@@ -1490,7 +1488,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                         {
                             stringBuilder_Where.Append(" AND ");
                         }
-                        stringBuilder_Where.Append($"\"{tColumn_Pk.UniqueId()}\" = {string_ParamName}");
+                        stringBuilder_Where.Append(CultureInfo.CurrentCulture, $"\"{tColumn_Pk.UniqueId()}\" = {string_ParamName}");
                         paramIdx++;
                     }
                     stringBuilder_Where.Append(')');
@@ -1792,7 +1790,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 npgsqlCommand_Count.CommandTimeout = commandTimeout;
                 npgsqlCommand_Count.Parameters.AddWithValue("partitionValue", partitionValue);
 
-                long count = System.Convert.ToInt64(await npgsqlCommand_Count.ExecuteScalarAsync(cancellationToken));
+                long count = System.Convert.ToInt64(await npgsqlCommand_Count.ExecuteScalarAsync(cancellationToken), CultureInfo.CurrentCulture);
                 if (count == 0)
                 {
                     return string.Empty;
@@ -2015,8 +2013,8 @@ namespace DiGi.PostgreSQL.Table.Classes
             IEnumerable<string> columnNames = dictionary.Keys.Select(x => $"\"{x}\"");
             IEnumerable<string> parametersNames = dictionary.Keys.Select(x => $"@{x}");
 
-            stringBuilder.AppendLine($"INSERT INTO \"{TableName}\" ({string.Join(", ", columnNames)})");
-            stringBuilder.AppendLine($"VALUES ({string.Join(", ", parametersNames)})");
+            stringBuilder.AppendLine(CultureInfo.CurrentCulture, $"INSERT INTO \"{TableName}\" ({string.Join(", ", columnNames)})");
+            stringBuilder.AppendLine(CultureInfo.CurrentCulture, $"VALUES ({string.Join(", ", parametersNames)})");
 
             if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
             {
@@ -2049,8 +2047,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                             lines.Add($"\"{keyValuePair.Key}\" = EXCLUDED.\"{keyValuePair.Key}\"");
                         }
 
-                        stringBuilder.AppendLine($"ON CONFLICT ({string.Join(", ", primaryKeysQuoted)})");
-                        stringBuilder.AppendLine($"DO UPDATE SET {string.Join(", ", lines)}");
+                        stringBuilder.AppendLine(CultureInfo.CurrentCulture, $"ON CONFLICT ({string.Join(", ", primaryKeysQuoted)})");
+                        stringBuilder.AppendLine(CultureInfo.CurrentCulture, $"DO UPDATE SET {string.Join(", ", lines)}");
                     }
                 }
             }

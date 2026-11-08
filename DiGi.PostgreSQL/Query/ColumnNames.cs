@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -38,7 +39,7 @@ namespace DiGi.PostgreSQL
 
                 while (await npgsqlDataReader.ReadAsync(cancellationToken))
                 {
-                    result.Add(npgsqlDataReader.GetString(0).ToLower());
+                    result.Add(npgsqlDataReader.GetString(0).ToLower(CultureInfo.CurrentCulture));
                 }
             }
             return result;

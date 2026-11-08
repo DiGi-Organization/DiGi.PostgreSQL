@@ -1,6 +1,7 @@
 using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +47,7 @@ namespace DiGi.PostgreSQL
             }
             else if (Core.Query.IsNumeric(@object))
             {
-                return System.Convert.ToInt64(@object);
+                return System.Convert.ToInt64(@object, CultureInfo.CurrentCulture);
             }
 
             return -1;

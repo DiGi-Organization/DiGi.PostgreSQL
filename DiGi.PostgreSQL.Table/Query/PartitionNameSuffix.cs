@@ -1,4 +1,6 @@
-﻿namespace DiGi.PostgreSQL.Table
+﻿using System.Globalization;
+
+namespace DiGi.PostgreSQL.Table
 {
     public static partial class Query
     {
@@ -14,7 +16,7 @@
                 return null;
             }
 
-            return text.ToLower().Trim().Replace(" ", "_");
+            return text.ToLower(CultureInfo.CurrentCulture).Trim().Replace(" ", "_");
         }
     }
 }

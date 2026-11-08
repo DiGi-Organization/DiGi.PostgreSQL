@@ -8,7 +8,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
     /// </summary>
     public class UniqueIdReferenceGeneratingEventArgs : PostgreSQL.Classes.ReferenceGeneratingEventArgs
     {
-        private string? uniqueId = null;
+        private string? uniqueId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UniqueIdReferenceGeneratingEventArgs"/> class.

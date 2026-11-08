@@ -1,6 +1,7 @@
 using DiGi.Core.IO.Table.Interfaces;
 using DiGi.PostgreSQL.Table.Classes;
 using Npgsql;
+using System.Globalization;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -148,7 +149,7 @@ namespace DiGi.PostgreSQL.Table
                     lines.Add(line);
                 }
 
-                stringBuilder.Append($"CREATE TABLE \"{tableName}\" (");
+                stringBuilder.Append(CultureInfo.CurrentCulture, $"CREATE TABLE \"{tableName}\" (");
                 stringBuilder.Append(string.Join(", ", lines));
 
                 if (columns_PrimaryKey is not null && columns_PrimaryKey.Count != 0)
@@ -168,7 +169,7 @@ namespace DiGi.PostgreSQL.Table
 
                     if (lines.Count > 0)
                     {
-                        stringBuilder.Append($", PRIMARY KEY ({string.Join(", ", lines)})");
+                        stringBuilder.Append(CultureInfo.CurrentCulture, $", PRIMARY KEY ({string.Join(", ", lines)})");
                     }
                 }
 
@@ -189,7 +190,7 @@ namespace DiGi.PostgreSQL.Table
 
                     if (lines.Count > 0)
                     {
-                        stringBuilder.Append($", UNIQUE ({string.Join(", ", lines)})");
+                        stringBuilder.Append(CultureInfo.CurrentCulture, $", UNIQUE ({string.Join(", ", lines)})");
                     }
                 }
 
@@ -204,11 +205,11 @@ namespace DiGi.PostgreSQL.Table
                             // Fixed: Cleaned expression structure for PARTITION BY statement to prevent syntax errors
                             if (partitioningRule is ValuePartitioningRule)
                             {
-                                stringBuilder.Append($" PARTITION BY LIST (\"{uniqueId}\")");
+                                stringBuilder.Append(CultureInfo.CurrentCulture, $" PARTITION BY LIST (\"{uniqueId}\")");
                             }
                             else if (partitioningRule is RangePartitioningRule)
                             {
-                                stringBuilder.Append($" PARTITION BY RANGE (\"{uniqueId}\")");
+                                stringBuilder.Append(CultureInfo.CurrentCulture, $" PARTITION BY RANGE (\"{uniqueId}\")");
                             }
                         }
                     }
@@ -259,7 +260,7 @@ namespace DiGi.PostgreSQL.Table
 
                 if (definitions.Count > 0)
                 {
-                    stringBuilder.Append($"ALTER TABLE \"{tableName}\" ");
+                    stringBuilder.Append(CultureInfo.CurrentCulture, $"ALTER TABLE \"{tableName}\" ");
                     stringBuilder.Append(string.Join(", ", definitions));
                     stringBuilder.Append(';');
                 }

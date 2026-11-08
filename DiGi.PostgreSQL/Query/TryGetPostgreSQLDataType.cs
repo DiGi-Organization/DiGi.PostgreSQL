@@ -1,4 +1,5 @@
 ﻿using DiGi.PostgreSQL.Enums;
+using System.Globalization;
 
 namespace DiGi.PostgreSQL
 {
@@ -19,7 +20,7 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            string value_Temp = value.ToLower();
+            string value_Temp = value.ToLower(CultureInfo.CurrentCulture);
 
             switch (value_Temp)
             {

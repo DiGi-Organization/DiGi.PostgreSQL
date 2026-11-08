@@ -10,7 +10,7 @@ namespace DiGi.PostgreSQL.Classes
         /// <summary>
         /// Indicates whether the event has been handled.
         /// </summary>
-        protected bool handled = false;
+        protected bool handled;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReferenceGeneratingEventArgs"/> class.

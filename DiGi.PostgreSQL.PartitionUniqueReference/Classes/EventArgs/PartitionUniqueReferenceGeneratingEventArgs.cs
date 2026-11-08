@@ -7,7 +7,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
     /// </summary>
     public class PartitionUniqueReferenceGeneratingEventArgs : PostgreSQL.Classes.ReferenceGeneratingEventArgs
     {
-        private PartitionReference.Classes.PartitionReference? partitionReference = null;
+        private PartitionReference.Classes.PartitionReference? partitionReference;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionUniqueReferenceGeneratingEventArgs"/> class.

@@ -34,7 +34,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
             try
             {
-                await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
                 npgsqlCommand.CommandTimeout = commandTimeout;
                 npgsqlCommand.Parameters.AddWithValue("partition_id", partition.Id);
 
