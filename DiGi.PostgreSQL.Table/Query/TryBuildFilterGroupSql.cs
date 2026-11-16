@@ -14,6 +14,7 @@ namespace DiGi.PostgreSQL.Table
     {
         /// <summary>
         /// Recursively builds the SQL query condition and parameters from the specified <see cref="FilterGroup"/>.
+        /// <para>Keys <paramref name="existingColumns"/> by unique identifier once and delegates to the overload taking that lookup. A caller that builds more than one statement from the same columns keys them itself and calls that overload directly.</para>
         /// </summary>
         /// <typeparam name="UColumn">The base column type deriving from <see cref="IColumn"/>.</typeparam>
         /// <param name="filterGroup">The filter group instance to build SQL for.</param>
@@ -31,7 +32,44 @@ namespace DiGi.PostgreSQL.Table
                 return true;
             }
 
-            List<string> conditions = [];
+            // The first column carrying a unique identifier wins, as the linear search this replaced did.
+            Dictionary<string, UColumn> dictionary_Columns = new(existingColumns.Count);
+            foreach (UColumn column in existingColumns)
+            {
+                if (column.UniqueId() is string uniqueId)
+                {
+                    dictionary_Columns.TryAdd(uniqueId, column);
+                }
+            }
+
+            return filterGroup.TryBuildFilterGroupSql(dictionary_Columns, stringBuilder_Sql, npgsqlParameterCollection, ref parameterIndex);
+        }
+
+        /// <summary>
+        /// Recursively builds the SQL query condition and parameters from the specified <see cref="FilterGroup"/>, resolving every filter column through a lookup keyed by unique identifier.
+        /// <para>The condition is appended straight to <paramref name="stringBuilder_Sql"/>; when the build answers <c>false</c> the builder is restored to its length on entry.</para>
+        /// </summary>
+        /// <typeparam name="UColumn">The base column type deriving from <see cref="IColumn"/>.</typeparam>
+        /// <param name="filterGroup">The filter group instance to build SQL for.</param>
+        /// <param name="dictionary_Columns">The valid whitelisted database columns, keyed by unique identifier.</param>
+        /// <param name="stringBuilder_Sql">The string builder to append the resulting SQL condition to.</param>
+        /// <param name="npgsqlParameterCollection">The parameter collection to bind Npgsql parameters to.</param>
+        /// <param name="parameterIndex">A reference counter for unique query parameter names.</param>
+        /// <returns><c>true</c> when the SQL condition was built; <c>false</c> only when a whitelisted column's stored type cannot be resolved to an Npgsql data type.</returns>
+        /// <exception cref="InvalidFilterException">A filter names a column the stored table does not hold, or carries a value that cannot be converted to the column's type.</exception>
+        public static bool TryBuildFilterGroupSql<UColumn>(this FilterGroup? filterGroup, Dictionary<string, UColumn> dictionary_Columns, StringBuilder stringBuilder_Sql, NpgsqlParameterCollection npgsqlParameterCollection, ref int parameterIndex)
+            where UColumn : IColumn
+        {
+            if (filterGroup is null)
+            {
+                return true;
+            }
+
+            // Conditions are appended in place and counted; the surrounding parentheses are only known to be needed
+            // once the second one has been written, so the opening one is inserted at the end.
+            int start = stringBuilder_Sql.Length;
+            int count = 0;
+            string logicalOperator = filterGroup.LogicalOperator == FilterLogicalOperator.Or ? " OR " : " AND ";
 
             if (filterGroup.FilterConditions is not null)
             {
@@ -42,25 +80,35 @@ namespace DiGi.PostgreSQL.Table
                         continue;
                     }
 
-                    UColumn? column = existingColumns.Find(x => x?.UniqueId() == filterCondition.ColumnUniqueId);
-                    if (column is null)
+                    string columnUniqueId = filterCondition.ColumnUniqueId;
+
+                    if (!dictionary_Columns.TryGetValue(columnUniqueId, out UColumn? column) || column is null)
                     {
-                        throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator);
+                        throw new InvalidFilterException(columnUniqueId, filterCondition.FilterOperator);
                     }
 
                     if (column.NpgsqlDbType() is not NpgsqlTypes.NpgsqlDbType npgsqlDbType)
                     {
+                        stringBuilder_Sql.Length = start;
                         return false;
                     }
+
+                    // Every branch below writes exactly one condition or throws, so the separator goes in first.
+                    if (count > 0)
+                    {
+                        stringBuilder_Sql.Append(logicalOperator);
+                    }
+
+                    count++;
 
                     switch (filterCondition.FilterOperator)
                     {
                         case FilterOperator.IsNull:
-                            conditions.Add($"\"{filterCondition.ColumnUniqueId}\" IS NULL");
+                            stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" IS NULL");
                             break;
 
                         case FilterOperator.IsNotNull:
-                            conditions.Add($"\"{filterCondition.ColumnUniqueId}\" IS NOT NULL");
+                            stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" IS NOT NULL");
                             break;
 
                         case FilterOperator.Contains:
@@ -68,23 +116,23 @@ namespace DiGi.PostgreSQL.Table
                             {
                                 if (!column.TryGetValidValue(filterCondition.Value, out object? validValue_Contains))
                                 {
-                                    throw new InvalidFilterException(filterCondition.ColumnUniqueId, FilterOperator.Contains, filterCondition.Value);
+                                    throw new InvalidFilterException(columnUniqueId, FilterOperator.Contains, filterCondition.Value);
                                 }
                                 else if (validValue_Contains is not null)
                                 {
                                     string paramName = $"filterParam_{parameterIndex}";
                                     parameterIndex++;
-                                    conditions.Add($"\"{filterCondition.ColumnUniqueId}\" ILIKE @{paramName}");
+                                    stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" ILIKE @").Append(paramName);
                                     npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = $"%{validValue_Contains}%" });
                                 }
                                 else
                                 {
-                                    conditions.Add("1=0");
+                                    stringBuilder_Sql.Append("1=0");
                                 }
                             }
                             else
                             {
-                                conditions.Add("1=0");
+                                stringBuilder_Sql.Append("1=0");
                             }
                             break;
 
@@ -114,7 +162,7 @@ namespace DiGi.PostgreSQL.Table
                                     }
                                     if (!column.TryGetValidValue(item, out object? validItem))
                                     {
-                                        throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, item);
+                                        throw new InvalidFilterException(columnUniqueId, filterCondition.FilterOperator, item);
                                     }
                                     if (validItem is not null)
                                     {
@@ -124,7 +172,7 @@ namespace DiGi.PostgreSQL.Table
 
                                 if (validValues.Count == 0)
                                 {
-                                    conditions.Add(filterCondition.FilterOperator == FilterOperator.In ? "1=0" : "1=1");
+                                    stringBuilder_Sql.Append(filterCondition.FilterOperator == FilterOperator.In ? "1=0" : "1=1");
                                 }
                                 else if (validValues.Count == 1)
                                 {
@@ -132,7 +180,7 @@ namespace DiGi.PostgreSQL.Table
                                     parameterIndex++;
                                     string opSymbol = filterCondition.FilterOperator == FilterOperator.In ? "=" : "!=";
 
-                                    conditions.Add($"\"{filterCondition.ColumnUniqueId}\" {opSymbol} @{paramName}");
+                                    stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" ").Append(opSymbol).Append(" @").Append(paramName);
                                     npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValues[0] });
                                 }
                                 else
@@ -141,7 +189,7 @@ namespace DiGi.PostgreSQL.Table
                                     parameterIndex++;
                                     string arrayFunc = filterCondition.FilterOperator == FilterOperator.In ? "= ANY" : "!= ALL";
 
-                                    conditions.Add($"\"{filterCondition.ColumnUniqueId}\" {arrayFunc}(@{paramName})");
+                                    stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" ").Append(arrayFunc).Append("(@").Append(paramName).Append(')');
                                     npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, NpgsqlTypes.NpgsqlDbType.Array | npgsqlDbType) { Value = validValues.ToArray() });
                                 }
                             }
@@ -150,7 +198,7 @@ namespace DiGi.PostgreSQL.Table
                                 if (filterCondition.Value is System.Text.Json.JsonElement jsonElement_Scalar &&
                                     jsonElement_Scalar.ValueKind is System.Text.Json.JsonValueKind.Object or System.Text.Json.JsonValueKind.Undefined)
                                 {
-                                    throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
+                                    throw new InvalidFilterException(columnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
                                 }
                                 else if (column.TryGetValidValue(filterCondition.Value, out object? validValue) && validValue is not null)
                                 {
@@ -158,16 +206,16 @@ namespace DiGi.PostgreSQL.Table
                                     parameterIndex++;
                                     string opSymbol = filterCondition.FilterOperator == FilterOperator.In ? "=" : "!=";
 
-                                    conditions.Add($"\"{filterCondition.ColumnUniqueId}\" {opSymbol} @{paramName}");
+                                    stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" ").Append(opSymbol).Append(" @").Append(paramName);
                                     npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValue.DatabaseValue() });
                                 }
                                 else if (filterCondition.Value is null)
                                 {
-                                    conditions.Add(filterCondition.FilterOperator == FilterOperator.In ? "1=0" : "1=1");
+                                    stringBuilder_Sql.Append(filterCondition.FilterOperator == FilterOperator.In ? "1=0" : "1=1");
                                 }
                                 else
                                 {
-                                    throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
+                                    throw new InvalidFilterException(columnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
                                 }
                             }
                             break;
@@ -190,32 +238,32 @@ namespace DiGi.PostgreSQL.Table
                                         _ => "="
                                     };
 
-                                    conditions.Add($"\"{filterCondition.ColumnUniqueId}\" {opSymbol} @{paramName}");
+                                    stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" ").Append(opSymbol).Append(" @").Append(paramName);
                                     npgsqlParameterCollection.Add(new NpgsqlParameter(paramName, npgsqlDbType) { Value = validValue_Comp.DatabaseValue() });
                                 }
                                 else
                                 {
                                     if (filterCondition.FilterOperator == FilterOperator.Equals)
                                     {
-                                        conditions.Add($"\"{filterCondition.ColumnUniqueId}\" IS NULL");
+                                        stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" IS NULL");
                                     }
                                     else if (filterCondition.FilterOperator == FilterOperator.NotEquals)
                                     {
-                                        conditions.Add($"\"{filterCondition.ColumnUniqueId}\" IS NOT NULL");
+                                        stringBuilder_Sql.Append('"').Append(columnUniqueId).Append("\" IS NOT NULL");
                                     }
                                     else
                                     {
-                                        conditions.Add("1=0");
+                                        stringBuilder_Sql.Append("1=0");
                                     }
                                 }
                             }
                             else if (filterCondition.Value is null)
                             {
-                                conditions.Add("1=0");
+                                stringBuilder_Sql.Append("1=0");
                             }
                             else
                             {
-                                throw new InvalidFilterException(filterCondition.ColumnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
+                                throw new InvalidFilterException(columnUniqueId, filterCondition.FilterOperator, filterCondition.Value);
                             }
                             break;
                     }
@@ -231,32 +279,33 @@ namespace DiGi.PostgreSQL.Table
                         continue;
                     }
 
-                    StringBuilder stringBuilder_Child = new();
-                    if (!filterGroup_Child.TryBuildFilterGroupSql(existingColumns, stringBuilder_Child, npgsqlParameterCollection, ref parameterIndex))
+                    int length = stringBuilder_Sql.Length;
+                    if (count > 0)
                     {
+                        stringBuilder_Sql.Append(logicalOperator);
+                    }
+
+                    int length_Child = stringBuilder_Sql.Length;
+                    if (!filterGroup_Child.TryBuildFilterGroupSql(dictionary_Columns, stringBuilder_Sql, npgsqlParameterCollection, ref parameterIndex))
+                    {
+                        stringBuilder_Sql.Length = start;
                         return false;
                     }
 
-                    if (stringBuilder_Child.Length > 0)
+                    // A child that wrote nothing is not a condition: the separator written for it is taken back.
+                    if (stringBuilder_Sql.Length == length_Child)
                     {
-                        conditions.Add(stringBuilder_Child.ToString());
+                        stringBuilder_Sql.Length = length;
+                        continue;
                     }
+
+                    count++;
                 }
             }
 
-            if (conditions.Count == 0)
+            if (count > 1)
             {
-                return true;
-            }
-
-            string logicalOp = filterGroup.LogicalOperator == FilterLogicalOperator.Or ? " OR " : " AND ";
-            if (conditions.Count == 1)
-            {
-                stringBuilder_Sql.Append(conditions[0]);
-            }
-            else
-            {
-                stringBuilder_Sql.Append('(').Append(string.Join(logicalOp, conditions)).Append(')');
+                stringBuilder_Sql.Insert(start, '(').Append(')');
             }
 
             return true;

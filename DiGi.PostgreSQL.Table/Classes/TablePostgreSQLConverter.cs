@@ -131,9 +131,10 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
+            Dictionary<string, UColumn> dictionary_Columns = ColumnsByUniqueId(existingColumns);
+            if (columnUniqueId is null || !dictionary_Columns.ContainsKey(columnUniqueId))
             {
-                throw new InvalidFilterException(columnUniqueId);
+                throw new InvalidFilterException(columnUniqueId ?? string.Empty);
             }
 
             // Resolve partitioning column from conversion options
@@ -156,7 +157,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (filterGroup is not null)
             {
                 StringBuilder stringBuilder_Filter = new();
-                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(dictionary_Columns,stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
                 {
                     return null;
                 }
@@ -250,11 +251,12 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
+            Dictionary<string, UColumn> dictionary_Columns = ColumnsByUniqueId(existingColumns);
             foreach (AggregateMeasure measure in measures)
             {
-                if (!existingColumns.Exists(x => x?.UniqueId() == measure.ColumnUniqueId))
+                if (measure.ColumnUniqueId is null || !dictionary_Columns.ContainsKey(measure.ColumnUniqueId))
                 {
-                    throw new InvalidFilterException(measure.ColumnUniqueId);
+                    throw new InvalidFilterException(measure.ColumnUniqueId ?? string.Empty);
                 }
             }
 
@@ -276,7 +278,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (filterGroup is not null)
             {
                 StringBuilder stringBuilder_Filter = new();
-                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(dictionary_Columns,stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
                 {
                     return null;
                 }
@@ -344,9 +346,10 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
+            Dictionary<string, UColumn> dictionary_Columns = ColumnsByUniqueId(existingColumns);
+            if (columnUniqueId is null || !dictionary_Columns.ContainsKey(columnUniqueId))
             {
-                throw new InvalidFilterException(columnUniqueId);
+                throw new InvalidFilterException(columnUniqueId ?? string.Empty);
             }
 
             // Resolve partitioning column from conversion options
@@ -367,7 +370,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (filterGroup is not null)
             {
                 StringBuilder stringBuilder_Filter = new();
-                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(dictionary_Columns,stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
                 {
                     return null;
                 }
@@ -491,7 +494,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
 
                 StringBuilder stringBuilder_Filter = new();
-                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Count.Parameters, ref parameterIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(ColumnsByUniqueId(existingColumns), stringBuilder_Filter, npgsqlCommand_Count.Parameters, ref parameterIndex))
                 {
                     return null;
                 }
@@ -775,9 +778,10 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
+            Dictionary<string, UColumn> dictionary_Columns = ColumnsByUniqueId(existingColumns);
+            if (columnUniqueId is null || !dictionary_Columns.ContainsKey(columnUniqueId))
             {
-                throw new InvalidFilterException(columnUniqueId);
+                throw new InvalidFilterException(columnUniqueId ?? string.Empty);
             }
 
             string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
@@ -798,7 +802,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (filterGroup is not null)
             {
                 StringBuilder stringBuilder_Filter = new();
-                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Histogram.Parameters, ref parameterIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(dictionary_Columns,stringBuilder_Filter, npgsqlCommand_Histogram.Parameters, ref parameterIndex))
                 {
                     return null;
                 }
@@ -933,7 +937,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            if (!columns_Existing.Exists(x => x?.UniqueId() == columnUniqueId))
+            Dictionary<string, UColumn> dictionary_Columns = ColumnsByUniqueId(columns_Existing);
+            if (!dictionary_Columns.ContainsKey(columnUniqueId))
             {
                 throw new InvalidFilterException(columnUniqueId);
             }
@@ -949,7 +954,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (filterGroup is not null)
             {
                 StringBuilder stringBuilder_Filter = new();
-                if (!filterGroup.TryBuildFilterGroupSql(columns_Existing, stringBuilder_Filter, npgsqlCommand.Parameters, ref parameterIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(dictionary_Columns,stringBuilder_Filter, npgsqlCommand.Parameters, ref parameterIndex))
                 {
                     return null;
                 }
@@ -1392,6 +1397,9 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
+            // Keyed once: the batched branch below builds the filter for every batch.
+            Dictionary<string, UColumn> dictionary_Metadata = ColumnsByUniqueId(uColumns_Metadata);
+
             Dictionary<string, TColumn> tColumns_Dictionary = [];
             foreach (TColumn tColumn in tColumns_Table)
             {
@@ -1446,7 +1454,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 int parameterIndex = 0;
                 StringBuilder stringBuilder_Filter = new();
 
-                if (!filterGroup.TryBuildFilterGroupSql(uColumns_Metadata, stringBuilder_Filter, npgsqlCommand_Select.Parameters, ref parameterIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(dictionary_Metadata,stringBuilder_Filter, npgsqlCommand_Select.Parameters, ref parameterIndex))
                 {
                     return false;
                 }
@@ -1512,7 +1520,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 int filterParamIndex = 0;
                 StringBuilder stringBuilder_Filter = new();
-                if (!filterGroup.TryBuildFilterGroupSql(uColumns_Metadata, stringBuilder_Filter, npgsqlCommand_SelectBatch.Parameters, ref filterParamIndex))
+                if (!filterGroup.TryBuildFilterGroupSql(dictionary_Metadata,stringBuilder_Filter, npgsqlCommand_SelectBatch.Parameters, ref filterParamIndex))
                 {
                     return false;
                 }
@@ -2152,33 +2160,75 @@ namespace DiGi.PostgreSQL.Table.Classes
         // columns that are not part of the table (the physical position of a physical-order read).
         private static async Task<bool> ReadAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap, Action<NpgsqlDataReader>? rowRead, CancellationToken cancellationToken) where TColumn : IColumn where TRow : IRow<TRow>
         {
+            // Resolved on the first row and reused for every later one: the reader ordinal of each column, the table
+            // index its value is filed under, and the ordinals of the primary key. Reading a cell by name and filing it
+            // by name both searched the column list, so a row of n columns cost n lookups in the reader and n linear
+            // scans of the table's columns - for a 230-column row, about 53 000 name comparisons per row.
+            int count = dictionary.Count;
+            TColumn[]? columns = null;
+            int[] ordinals = [];
+            int[] indexes = [];
+            int[] ordinals_PrimaryKey = [];
+            object?[] values_Reader = [];
+            StringBuilder stringBuilder = new();
+
             while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
-                Dictionary<string, object?> values = [];
-                foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
+                if (columns is null)
                 {
-                    //values[keyValuePair.Value.UniqueId()!] = npgsqlDataReader[keyValuePair.Key];
-                    values[keyValuePair.Value.Name!] = npgsqlDataReader[keyValuePair.Key];
-                }
+                    columns = new TColumn[count];
+                    ordinals = new int[count];
+                    indexes = new int[count];
+                    values_Reader = new object?[count];
 
-                if (dictionary_PrimaryKey.Count > 0)
-                {
-                    StringBuilder stringBuilder = new();
+                    int index = 0;
+                    foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
+                    {
+                        columns[index] = keyValuePair.Value;
+                        ordinals[index] = npgsqlDataReader.GetOrdinal(keyValuePair.Key);
+                        indexes[index] = table.GetColumnIndex(keyValuePair.Value.Name!);
+                        index++;
+                    }
+
+                    ordinals_PrimaryKey = new int[dictionary_PrimaryKey.Count];
+                    index = 0;
                     foreach (TColumn column in dictionary_PrimaryKey.Values)
                     {
-                        stringBuilder.Append(npgsqlDataReader[column.UniqueId()!]).Append('|');
+                        ordinals_PrimaryKey[index] = npgsqlDataReader.GetOrdinal(column.UniqueId()!);
+                        index++;
+                    }
+                }
+
+                Dictionary<int, object?> values = new(count);
+                for (int i = 0; i < count; i++)
+                {
+                    object? value = npgsqlDataReader.GetValue(ordinals[i]);
+                    values_Reader[i] = value;
+                    if (indexes[i] != -1)
+                    {
+                        values[indexes[i]] = value;
+                    }
+                }
+
+                if (ordinals_PrimaryKey.Length > 0)
+                {
+                    stringBuilder.Clear();
+                    for (int i = 0; i < ordinals_PrimaryKey.Length; i++)
+                    {
+                        stringBuilder.Append(npgsqlDataReader.GetValue(ordinals_PrimaryKey[i])).Append('|');
                     }
                     string uniqueValue = stringBuilder.ToString();
 
                     if (existingRowsMap.TryGetValue(uniqueValue, out TRow? row_Existing))
                     {
-                        foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
+                        for (int i = 0; i < count; i++)
                         {
-                            object? value_Existing = row_Existing[keyValuePair.Value.Index];
-                            object? value_New = values[keyValuePair.Value.Name!];
-                            if ((value_Existing == null || value_Existing.Equals(Core.Query.Default(keyValuePair.Value.Type))) && value_New != null)
+                            TColumn column = columns[i];
+                            object? value_Existing = row_Existing[column.Index];
+                            object? value_New = values_Reader[i];
+                            if ((value_Existing == null || value_Existing.Equals(Core.Query.Default(column.Type))) && value_New != null)
                             {
-                                row_Existing[keyValuePair.Value.Index] = value_New;
+                                row_Existing[column.Index] = value_New;
                             }
                         }
 
@@ -2197,6 +2247,23 @@ namespace DiGi.PostgreSQL.Table.Classes
                 rowRead?.Invoke(npgsqlDataReader);
             }
             return true;
+        }
+
+        // Keys the whitelisted columns by unique identifier for one statement build. UniqueId() normalizes the column
+        // name on every call, so searching the list once per filter condition repeated that for every column. The
+        // first column carrying an identifier wins, as the search did.
+        private static Dictionary<string, UColumn> ColumnsByUniqueId(List<UColumn> columns)
+        {
+            Dictionary<string, UColumn> result = new(columns.Count);
+            foreach (UColumn column in columns)
+            {
+                if (column.UniqueId() is string uniqueId)
+                {
+                    result.TryAdd(uniqueId, column);
+                }
+            }
+
+            return result;
         }
 
         private async Task<bool> CreateTableAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<UColumn> columns, int commandTimeout, CancellationToken cancellationToken)

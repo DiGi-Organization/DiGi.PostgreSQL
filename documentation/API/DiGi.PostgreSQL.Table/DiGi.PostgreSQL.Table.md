@@ -513,11 +513,73 @@ The unique id of the partitioning column\. This value can be null\.
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
 The statement, or [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null') when the table name, the partitioning column or every column id is missing\.
 
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int)'></a>
+
+## Query\.TryBuildFilterGroupSql\<UColumn\>\(this FilterGroup, Dictionary\<string,UColumn\>, StringBuilder, NpgsqlParameterCollection, int\) Method
+
+Recursively builds the SQL query condition and parameters from the specified [FilterGroup](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterGroup 'DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup'), resolving every filter column through a lookup keyed by unique identifier\.
+
+The condition is appended straight to [stringBuilder\_Sql](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).stringBuilder_Sql 'DiGi\.PostgreSQL\.Table\.Query\.TryBuildFilterGroupSql\<UColumn\>\(this DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup, System\.Collections\.Generic\.Dictionary\<string,UColumn\>, System\.Text\.StringBuilder, Npgsql\.NpgsqlParameterCollection, int\)\.stringBuilder\_Sql'); when the build answers `false` the builder is restored to its length on entry.
+
+```csharp
+public static bool TryBuildFilterGroupSql<UColumn>(this DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup, System.Collections.Generic.Dictionary<string,UColumn> dictionary_Columns, System.Text.StringBuilder stringBuilder_Sql, Npgsql.NpgsqlParameterCollection npgsqlParameterCollection, ref int parameterIndex)
+    where UColumn : DiGi.Core.IO.Table.Interfaces.IColumn;
+```
+#### Type parameters
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).UColumn'></a>
+
+`UColumn`
+
+The base column type deriving from [DiGi\.Core\.IO\.Table\.Interfaces\.IColumn](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.interfaces.icolumn 'DiGi\.Core\.IO\.Table\.Interfaces\.IColumn')\.
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).filterGroup'></a>
+
+`filterGroup` [FilterGroup](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterGroup 'DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup')
+
+The filter group instance to build SQL for\.
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).dictionary_Columns'></a>
+
+`dictionary_Columns` [System\.Collections\.Generic\.Dictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).UColumn 'DiGi\.PostgreSQL\.Table\.Query\.TryBuildFilterGroupSql\<UColumn\>\(this DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup, System\.Collections\.Generic\.Dictionary\<string,UColumn\>, System\.Text\.StringBuilder, Npgsql\.NpgsqlParameterCollection, int\)\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')
+
+The valid whitelisted database columns, keyed by unique identifier\.
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).stringBuilder_Sql'></a>
+
+`stringBuilder_Sql` [System\.Text\.StringBuilder](https://learn.microsoft.com/en-us/dotnet/api/system.text.stringbuilder 'System\.Text\.StringBuilder')
+
+The string builder to append the resulting SQL condition to\.
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).npgsqlParameterCollection'></a>
+
+`npgsqlParameterCollection` [Npgsql\.NpgsqlParameterCollection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlparametercollection 'Npgsql\.NpgsqlParameterCollection')
+
+The parameter collection to bind Npgsql parameters to\.
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).parameterIndex'></a>
+
+`parameterIndex` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+A reference counter for unique query parameter names\.
+
+#### Returns
+[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')  
+`true` when the SQL condition was built; `false` only when a whitelisted column's stored type cannot be resolved to an Npgsql data type\.
+
+#### Exceptions
+
+[InvalidFilterException](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.InvalidFilterException 'DiGi\.PostgreSQL\.Table\.Classes\.InvalidFilterException')  
+A filter names a column the stored table does not hold, or carries a value that cannot be converted to the column's type\.
+
 <a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.List_UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int)'></a>
 
 ## Query\.TryBuildFilterGroupSql\<UColumn\>\(this FilterGroup, List\<UColumn\>, StringBuilder, NpgsqlParameterCollection, int\) Method
 
 Recursively builds the SQL query condition and parameters from the specified [FilterGroup](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterGroup 'DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup')\.
+
+Keys [existingColumns](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.List_UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int).existingColumns 'DiGi\.PostgreSQL\.Table\.Query\.TryBuildFilterGroupSql\<UColumn\>\(this DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup, System\.Collections\.Generic\.List\<UColumn\>, System\.Text\.StringBuilder, Npgsql\.NpgsqlParameterCollection, int\)\.existingColumns') by unique identifier once and delegates to the overload taking that lookup. A caller that builds more than one statement from the same columns keys them itself and calls that overload directly.
 
 ```csharp
 public static bool TryBuildFilterGroupSql<UColumn>(this DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup, System.Collections.Generic.List<UColumn> existingColumns, System.Text.StringBuilder stringBuilder_Sql, Npgsql.NpgsqlParameterCollection npgsqlParameterCollection, ref int parameterIndex)
