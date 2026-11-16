@@ -1363,6 +1363,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         /// <summary>
         /// Asynchronously pulls data from the specified table using the provided Npgsql connection, applying a filter group in batches.
+        /// <para>With <paramref name="orderBy"/> or <paramref name="limit"/> the read is a single ordered statement (<c>ORDER BY … NULLS LAST</c>, <c>LIMIT @pullLimit</c>) into an empty table; order columns are validated against the stored column list like filter columns, so one the table does not hold throws. A pull into a table that already has rows orders and caps each primary-key batch on its own, so the combination is refused (<see langword="false"/>), as is a <paramref name="limit"/> below 1 (the WebAPI layer refuses both with 400 before this method is reached; DiGi-Organization/DiGi.GIS.WebAPI#84).</para>
         /// </summary>
         /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
         /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
@@ -1370,12 +1371,23 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table instance from which data is being pulled. May be null.</param>
         /// <param name="filterGroup">The filter group used to restrict the data retrieved from the database.</param>
         /// <param name="batchSize">The maximum number of rows to retrieve in each batch. The default value is 1000.</param>
+        /// <param name="orderBy">The optional sort conditions applied to the read, in order; null or empty reads unordered.</param>
+        /// <param name="limit">The optional maximum number of rows to return; null reads every matching row. A value below 1 is refused.</param>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
+        /// <exception cref="InvalidFilterException">A filter or sort condition names a column the stored table does not hold, or carries a value that cannot be converted to the column's type.</exception>
+        public async Task<bool> PullAsync<TColumn, TRow>(
+            NpgsqlConnection? npgsqlConnection,
+            Table<TColumn, TRow>? table,
+            FilterGroup filterGroup,
+            int batchSize = 1000,
+            IReadOnlyList<SortCondition>? orderBy = null,
+            int? limit = null,
+            int commandTimeout = 30,
+            CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
-            if (table is null || npgsqlConnection is null || filterGroup is null)
+            if (table is null || npgsqlConnection is null || filterGroup is null || limit is < 1)
             {
                 return false;
             }
@@ -1398,6 +1410,19 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             HashSet<string> uniqueIds_Filter = [];
             filterGroup.CollectColumnUniqueIds(uniqueIds_Filter);
+
+            // A sort column is resolved against the same stored metadata as a filter column, so it joins the set below
+            // (DiGi-Organization/DiGi.GIS.WebAPI#84).
+            if (orderBy is not null)
+            {
+                foreach (SortCondition? sortCondition in orderBy)
+                {
+                    if (sortCondition?.ColumnUniqueId is string uniqueId_Sort && !string.IsNullOrWhiteSpace(uniqueId_Sort))
+                    {
+                        uniqueIds_Filter.Add(uniqueId_Sort);
+                    }
+                }
+            }
 
             // The stored metadata is only used to resolve the filter's columns, so only those are read: a table of 230
             // columns otherwise had every column's metadata fetched and deserialized to resolve one or two. Keyed once,
@@ -1501,10 +1526,31 @@ namespace DiGi.PostgreSQL.Table.Classes
                     string_FinalQuery += $" WHERE {stringBuilder_Filter}";
                 }
 
+                StringBuilder stringBuilder_OrderBy = new();
+                if (orderBy.TryBuildOrderBySql(dictionary_Metadata, stringBuilder_OrderBy))
+                {
+                    string_FinalQuery += $" ORDER BY {stringBuilder_OrderBy}";
+                }
+
+                if (limit is int int_Limit)
+                {
+                    // The limit is a value, so it binds as a parameter; the whitelist above is what guards the
+                    // identifiers the clause carries (DiGi-Organization/DiGi.GIS.WebAPI#84).
+                    string_FinalQuery += " LIMIT @pullLimit";
+                    npgsqlCommand_Select.Parameters.Add(new NpgsqlParameter("pullLimit", NpgsqlTypes.NpgsqlDbType.Integer) { Value = int_Limit });
+                }
+
                 npgsqlCommand_Select.CommandText = string_FinalQuery;
 
                 await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync(cancellationToken);
                 return await ReadAsync(npgsqlDataReader_Select, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap, cancellationToken);
+            }
+
+            // Ordering and limiting would order and cap every primary-key batch on its own, so the combination is
+            // refused on this branch (DiGi-Organization/DiGi.GIS.WebAPI#84).
+            if (limit is not null || (orderBy is not null && orderBy.Any(x => x is not null && !string.IsNullOrWhiteSpace(x.ColumnUniqueId))))
+            {
+                return false;
             }
 
             List<TRow> tRows_All = [.. table.Rows];
@@ -1588,10 +1634,13 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table instance to pull data for. This value can be null.</param>
         /// <param name="filterGroup">The filter group used to restrict the data retrieved from the database.</param>
         /// <param name="batchSize">The maximum number of rows to retrieve in each batch. The default value is 1000.</param>
+        /// <param name="orderBy">The optional sort conditions applied to the read, in order; null or empty reads unordered.</param>
+        /// <param name="limit">The optional maximum number of rows to return; null reads every matching row. A value below 1 is refused.</param>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains <see langword="true"/> if the data was pulled successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
+        /// <exception cref="InvalidFilterException">A filter or sort condition names a column the stored table does not hold, or carries a value that cannot be converted to the column's type.</exception>
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000, IReadOnlyList<SortCondition>? orderBy = null, int? limit = null, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
@@ -1601,7 +1650,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await PullAsync(npgsqlConnection, table, filterGroup, batchSize, commandTimeout, cancellationToken);
+            return await PullAsync(npgsqlConnection, table, filterGroup, batchSize, orderBy: orderBy, limit: limit, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>

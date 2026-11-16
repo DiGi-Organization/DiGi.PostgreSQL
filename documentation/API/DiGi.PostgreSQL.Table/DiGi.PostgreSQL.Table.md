@@ -633,6 +633,56 @@ A reference counter for unique query parameter names\.
 [InvalidFilterException](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.InvalidFilterException 'DiGi\.PostgreSQL\.Table\.Classes\.InvalidFilterException')  
 A filter names a column the stored table does not hold, or carries a value that cannot be converted to the column's type\.
 
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder)'></a>
+
+## Query\.TryBuildOrderBySql\<UColumn\>\(this IEnumerable\<SortCondition\>, Dictionary\<string,UColumn\>, StringBuilder\) Method
+
+Builds the SQL `ORDER BY` clause from the specified sort conditions, resolving every column through a lookup keyed by unique identifier\.
+
+Each condition renders as `"column" ASC|DESC NULLS LAST`, joined by `, ` in list order; null values sort last in both directions. A condition naming no column is skipped. A caller wanting deterministic ties under equal sort values appends its own tie-break condition (the building-data reads append an ascending `reference` sort).
+
+The clause is appended straight to [stringBuilder\_Sql](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder).stringBuilder_Sql 'DiGi\.PostgreSQL\.Table\.Query\.TryBuildOrderBySql\<UColumn\>\(this System\.Collections\.Generic\.IEnumerable\<DiGi\.PostgreSQL\.Table\.Classes\.SortCondition\>, System\.Collections\.Generic\.Dictionary\<string,UColumn\>, System\.Text\.StringBuilder\)\.stringBuilder\_Sql'); an identifier cannot be a parameter, so the lookup is the whitelist — a column it does not hold throws instead of reaching the statement.
+
+```csharp
+public static bool TryBuildOrderBySql<UColumn>(this System.Collections.Generic.IEnumerable<DiGi.PostgreSQL.Table.Classes.SortCondition>? sortConditions, System.Collections.Generic.Dictionary<string,UColumn> dictionary_Columns, System.Text.StringBuilder stringBuilder_Sql)
+    where UColumn : DiGi.Core.IO.Table.Interfaces.IColumn;
+```
+#### Type parameters
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder).UColumn'></a>
+
+`UColumn`
+
+The base column type deriving from [DiGi\.Core\.IO\.Table\.Interfaces\.IColumn](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.interfaces.icolumn 'DiGi\.Core\.IO\.Table\.Interfaces\.IColumn')\.
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder).sortConditions'></a>
+
+`sortConditions` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[SortCondition](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.SortCondition 'DiGi\.PostgreSQL\.Table\.Classes\.SortCondition')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The sort conditions to render, in order\. May be null or empty\.
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder).dictionary_Columns'></a>
+
+`dictionary_Columns` [System\.Collections\.Generic\.Dictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder).UColumn 'DiGi\.PostgreSQL\.Table\.Query\.TryBuildOrderBySql\<UColumn\>\(this System\.Collections\.Generic\.IEnumerable\<DiGi\.PostgreSQL\.Table\.Classes\.SortCondition\>, System\.Collections\.Generic\.Dictionary\<string,UColumn\>, System\.Text\.StringBuilder\)\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')
+
+The valid whitelisted database columns, keyed by unique identifier\.
+
+<a name='DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder).stringBuilder_Sql'></a>
+
+`stringBuilder_Sql` [System\.Text\.StringBuilder](https://learn.microsoft.com/en-us/dotnet/api/system.text.stringbuilder 'System\.Text\.StringBuilder')
+
+The string builder to append the resulting SQL clause to\.
+
+#### Returns
+[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')  
+`true` when at least one sort condition was rendered; `false` when [sortConditions](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.TryBuildOrderBySql_UColumn_(thisSystem.Collections.Generic.IEnumerable_DiGi.PostgreSQL.Table.Classes.SortCondition_,System.Collections.Generic.Dictionary_string,UColumn_,System.Text.StringBuilder).sortConditions 'DiGi\.PostgreSQL\.Table\.Query\.TryBuildOrderBySql\<UColumn\>\(this System\.Collections\.Generic\.IEnumerable\<DiGi\.PostgreSQL\.Table\.Classes\.SortCondition\>, System\.Collections\.Generic\.Dictionary\<string,UColumn\>, System\.Text\.StringBuilder\)\.sortConditions') is null, empty, or names no column\.
+
+#### Exceptions
+
+[InvalidFilterException](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.InvalidFilterException 'DiGi\.PostgreSQL\.Table\.Classes\.InvalidFilterException')  
+A sort condition names a column the stored table does not hold\.
+
 <a name='DiGi.PostgreSQL.Table.Query.TryConvert(thisobject,object,NpgsqlTypes.NpgsqlDbType)'></a>
 
 ## Query\.TryConvert\(this object, object, NpgsqlDbType\) Method
