@@ -817,6 +817,10 @@ namespace DiGi.PostgreSQL.Table.Classes
             // each bucket floor or ceiling of rows / bucketCount of them) and groups by that rank; equal width needs the
             // scope's min and max first, which the cross-joined subquery supplies. Both answer the same four columns, so
             // the reader below does not care which ran.
+            // Equal width reads the table once: the scope's non-NULL values are materialized and both the min/max and the
+            // bucketing run over that one narrow column. Reading the table for each of them evaluated the filter over the
+            // wide rows twice - on a 230-column table of 100 000 rows 90-92 ms against 60-61 ms, of 400 000 rows 327-335 ms
+            // against 266-274 ms (local PostgreSQL 18.1, warm cache, the two-scan form running its min/max scan in parallel).
             string commandText = histogramBucketing == Enums.HistogramBucketing.EqualCount
                 ? $@"
                 SELECT bucket,
@@ -831,17 +835,20 @@ namespace DiGi.PostgreSQL.Table.Classes
                 GROUP BY bucket
                 ORDER BY bucket;"
                 : $@"
-                SELECT width_bucket(""{columnUniqueId}"", min_val, max_val, @bucketCount) as bucket,
-                       min(""{columnUniqueId}"") as range_start,
-                       max(""{columnUniqueId}"") as range_end,
-                       count(*) as count
-                FROM ""{TableName}""
-                CROSS JOIN (
-                    SELECT min(""{columnUniqueId}"") as min_val, max(""{columnUniqueId}"") as max_val
+                WITH scope AS MATERIALIZED (
+                    SELECT ""{columnUniqueId}"" as scope_value
                     FROM ""{TableName}""
-                    WHERE {stringBuilder_Where}
+                    WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
+                )
+                SELECT width_bucket(scope_value, min_val, max_val, @bucketCount) as bucket,
+                       min(scope_value) as range_start,
+                       max(scope_value) as range_end,
+                       count(*) as count
+                FROM scope
+                CROSS JOIN (
+                    SELECT min(scope_value) as min_val, max(scope_value) as max_val
+                    FROM scope
                 ) stats
-                WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
                 GROUP BY bucket
                 ORDER BY bucket;";
 
@@ -1389,16 +1396,45 @@ namespace DiGi.PostgreSQL.Table.Classes
                 uniqueIds.Add(uniqueId);
             }
 
-            filterGroup.CollectColumnUniqueIds(uniqueIds);
+            HashSet<string> uniqueIds_Filter = [];
+            filterGroup.CollectColumnUniqueIds(uniqueIds_Filter);
 
-            List<UColumn>? uColumns_Metadata = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
-            if (uColumns_Metadata is null || uColumns_Metadata.Count == 0)
+            // The stored metadata is only used to resolve the filter's columns, so only those are read: a table of 230
+            // columns otherwise had every column's metadata fetched and deserialized to resolve one or two. Keyed once,
+            // because the batched branch below builds the filter for every batch.
+            Dictionary<string, UColumn>? dictionary_Metadata = null;
+            if (uniqueIds_Filter.Count != 0)
             {
-                return false;
+                List<UColumn>? uColumns_Filter = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds_Filter, commandTimeout, cancellationToken);
+                if (uColumns_Filter is not null)
+                {
+                    dictionary_Metadata = ColumnsByUniqueId(uColumns_Filter);
+                    foreach (string uniqueId in uniqueIds_Filter)
+                    {
+                        if (!dictionary_Metadata.ContainsKey(uniqueId))
+                        {
+                            dictionary_Metadata = null;
+                            break;
+                        }
+                    }
+                }
             }
 
-            // Keyed once: the batched branch below builds the filter for every batch.
-            Dictionary<string, UColumn> dictionary_Metadata = ColumnsByUniqueId(uColumns_Metadata);
+            // A filter naming no column, or a column the narrow read did not find, takes the read over the table's
+            // columns as well, which decides between a table with no stored metadata (false) and an invalid filter
+            // (InvalidFilterException from the build below) exactly as before.
+            if (dictionary_Metadata is null)
+            {
+                uniqueIds.UnionWith(uniqueIds_Filter);
+
+                List<UColumn>? uColumns_Metadata = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
+                if (uColumns_Metadata is null || uColumns_Metadata.Count == 0)
+                {
+                    return false;
+                }
+
+                dictionary_Metadata = ColumnsByUniqueId(uColumns_Metadata);
+            }
 
             Dictionary<string, TColumn> tColumns_Dictionary = [];
             foreach (TColumn tColumn in tColumns_Table)
